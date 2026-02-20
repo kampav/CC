@@ -110,7 +110,7 @@ router.get('/dashboard', requireRole('EXEC', 'COLLEAGUE'), async (req, res, next
     let topOffers = [];
     try {
       const { data } = await axios.get(`${OFFER_SERVICE}/api/v1/offers?status=LIVE&sort=activations&limit=5`, { timeout: 3000 });
-      topOffers = (data.content || data.offers || data || []).slice(0, 5).map((o: any) => ({
+      topOffers = (data.content || data.offers || data || []).slice(0, 5).map(o => ({
         id: o.id, title: o.title, category: o.category,
         activations: o.currentActivations || o.current_activations || 0,
         cashbackRate: o.cashbackRate || o.cashback_rate,

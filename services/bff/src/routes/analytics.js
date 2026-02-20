@@ -13,7 +13,7 @@ function headers(req) {
 }
 
 // GET /api/v1/analytics/offers?merchantId=...
-router.get('/offers', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
+router.get('/offers', requireRole('MERCHANT', 'ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const params = req.query.merchantId ? { merchantId: req.query.merchantId } : {};
     const { data } = await axios.get(`${OFFER_SERVICE}/api/v1/offers/analytics/summary`, {
@@ -27,7 +27,7 @@ router.get('/offers', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) =
 });
 
 // GET /api/v1/analytics/redemptions?merchantId=...
-router.get('/redemptions', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
+router.get('/redemptions', requireRole('MERCHANT', 'ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const params = req.query.merchantId ? { merchantId: req.query.merchantId } : {};
     const { data } = await axios.get(`${REDEMPTION_SERVICE}/api/v1/redemptions/analytics/summary`, {
