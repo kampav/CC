@@ -427,6 +427,109 @@ router.get('/similar/:offerId', async (req, res, next) => {
 });
 
 /**
+ * GET /api/v1/recommendations/merchant-next-offer
+ * AI-powered "What should I offer next?" for merchants.
+ */
+router.get('/merchant-next-offer', requireRole('MERCHANT', 'COLLEAGUE', 'EXEC', 'ADMIN'), async (req, res, next) => {
+  try {
+    const aiKey = req.headers['x-ai-key'] || DEFAULT_AI_KEY;
+
+    // Fetch current offers and analytics
+    const [offersRes, analyticsRes] = await Promise.allSettled([
+      axios.get(`${OFFER_SERVICE}/api/v1/offers`, { headers: headers(req), params: { size: 100 } }),
+      axios.get(`${REDEMPTION_SERVICE}/api/v1/redemptions/analytics/summary`, { headers: headers(req) }),
+    ]);
+
+    const allOffers = offersRes.status === 'fulfilled' ? (offersRes.value.data.content || offersRes.value.data || []) : [];
+    const analytics = analyticsRes.status === 'fulfilled' ? analyticsRes.value.data : {};
+
+    // Build category performance
+    const categoryStats = {};
+    allOffers.forEach(o => {
+      const cat = o.category || 'General';
+      if (!categoryStats[cat]) categoryStats[cat] = { count: 0, live: 0, activations: 0 };
+      categoryStats[cat].count++;
+      if (o.status === 'LIVE') categoryStats[cat].live++;
+      categoryStats[cat].activations += o.currentActivations || o.current_activations || 0;
+    });
+
+    const liveCount   = allOffers.filter(o => o.status === 'LIVE').length;
+    const topCategory = Object.entries(categoryStats).sort((a, b) => b[1].activations - a[1].activations)[0]?.[0] || 'Dining';
+
+    let suggestions = null;
+
+    if (aiKey) {
+      const provider = detectProvider(aiKey);
+      const prompt = `You are a retail strategy AI for a UK bank's cashback rewards platform.
+A merchant wants to know what cashback offer to launch next.
+
+Current live offers by category: ${JSON.stringify(categoryStats)}
+Platform analytics: ${JSON.stringify({ liveOffers: liveCount, ...analytics })}
+
+Suggest 3 specific new cashback offer ideas with:
+- offer title
+- category
+- suggested cashback rate (%)
+- brief rationale (1 sentence)
+
+Return ONLY JSON: [{"title":"...","category":"...","cashbackRate":5,"rationale":"..."}]`;
+
+      try {
+        let text;
+        if (provider === 'claude') {
+          const { data } = await axios.post(CLAUDE_URL,
+            { model: CLAUDE_MODEL, max_tokens: 400, messages: [{ role: 'user', content: prompt }] },
+            { headers: { 'x-api-key': aiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, timeout: 10000 });
+          text = data.content?.[0]?.text;
+        } else if (provider === 'openai') {
+          const { data } = await axios.post(OPENAI_URL,
+            { model: OPENAI_MODEL, max_tokens: 400, messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' } },
+            { headers: { Authorization: `Bearer ${aiKey}`, 'Content-Type': 'application/json' }, timeout: 10000 });
+          text = data.choices?.[0]?.message?.content;
+        } else {
+          const { data } = await axios.post(`${GEMINI_URL}?key=${aiKey}`,
+            { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 400, temperature: 0.4 } },
+            { timeout: 10000 });
+          text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        }
+        if (text) {
+          const clean = text.replace(/```json\n?|\n?```/g, '').trim();
+          const parsed = JSON.parse(clean);
+          suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || parsed.offers || Object.values(parsed)[0]);
+        }
+      } catch (aiErr) {
+        console.warn(`[${req.correlationId}] merchant-next-offer AI error:`, aiErr.message);
+      }
+    }
+
+    // Rule-based fallback
+    if (!suggestions) {
+      const underRepresented = Object.entries(categoryStats)
+        .filter(([, s]) => s.live === 0 && s.count > 0)
+        .map(([cat]) => cat);
+      const growthCategories = ['Health & Wellness', 'Sustainable Fashion', 'Electric Vehicle'];
+      const suggest = [...underRepresented, ...growthCategories].slice(0, 3);
+      suggestions = suggest.map(cat => ({
+        title: `${cat} Cashback Offer`,
+        category: cat,
+        cashbackRate: 10,
+        rationale: `${cat} is trending and has low current offer coverage on the platform.`,
+      }));
+    }
+
+    res.json({
+      source: aiKey ? detectProvider(aiKey) : 'rule-based',
+      merchantId: req.userId,
+      topPerformingCategory: topCategory,
+      suggestions,
+      categoryStats,
+    });
+  } catch (err) {
+    next(err.response ? { status: err.response.status, message: err.response.data?.error || 'Next offer error' } : err);
+  }
+});
+
+/**
  * GET /api/v1/recommendations/merchant-insights
  * Returns targeting insights for merchants.
  */

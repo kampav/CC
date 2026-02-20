@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getUser, clearToken } from '../lib/auth';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Home', icon: '\u2302' },
@@ -11,6 +12,13 @@ const NAV_ITEMS = [
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const navigate  = useNavigate();
+  const user = getUser();
+
+  function handleLogout() {
+    clearToken();
+    navigate('/login');
+  }
 
   return (
     <div style={{ minHeight: '100vh', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", background: '#F8FAFC' }}>
@@ -36,14 +44,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <p style={{ margin: 0, fontSize: '0.7rem', color: '#C7D2FE', letterSpacing: '0.05em' }}>Personalised Offers & Cashback</p>
           </Link>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{
-            padding: '0.4rem 1rem', borderRadius: '20px',
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
-            fontSize: '0.8rem', color: '#E0E7FF',
-          }}>
-            Demo Customer
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ padding: '0.4rem 1rem', borderRadius: '20px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', fontSize: '0.8rem', color: '#E0E7FF' }}>
+            {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Customer'}
           </div>
+          <button onClick={handleLogout} style={{ padding: '0.4rem 0.9rem', borderRadius: '20px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#E0E7FF', cursor: 'pointer', fontSize: '0.75rem' }}>
+            Sign out
+          </button>
         </div>
       </header>
 

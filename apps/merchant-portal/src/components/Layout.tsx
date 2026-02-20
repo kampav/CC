@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getUser, clearToken } from '../lib/auth';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Home', icon: '\u2302' },
@@ -8,10 +9,18 @@ const NAV_ITEMS = [
   { path: '/offers/new', label: 'Create Offer', icon: '\u2795' },
   { path: '/partners', label: 'Partners', icon: '\uD83E\uDD1D' },
   { path: '/transactions', label: 'Transactions', icon: '\uD83D\uDCB3' },
+  { path: '/ai-suggestions', label: 'AI Suggestions', icon: '\uD83E\uDD16' },
 ];
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const navigate  = useNavigate();
+  const user = getUser();
+
+  function handleLogout() {
+    clearToken();
+    navigate('/login');
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
@@ -79,11 +88,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         }}>
           <h1 style={{ margin: 0, fontSize: '1.15rem', color: '#1E293B', fontWeight: 700 }}>Merchant Portal</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{
-              padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem',
-              background: '#EFF6FF', color: '#1E40AF', fontWeight: 600,
-            }}>MERCHANT</span>
-            <span style={{ color: '#64748B', fontSize: '0.85rem' }}>Demo Merchant</span>
+            <span style={{ padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem', background: '#EFF6FF', color: '#1E40AF', fontWeight: 600 }}>MERCHANT</span>
+            <span style={{ color: '#64748B', fontSize: '0.85rem' }}>{user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Merchant'}</span>
+            <button onClick={handleLogout} style={{ padding: '0.25rem 0.6rem', background: 'transparent', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', color: '#64748B' }}>Sign out</button>
           </div>
         </header>
 

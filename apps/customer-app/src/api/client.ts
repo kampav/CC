@@ -1,10 +1,16 @@
+import { getToken } from '../lib/auth';
+
 const API_BASE = '/api/v1';
-const API_KEY = 'customer-demo-key';
-const CUSTOMER_ID = '00000000-0000-0000-0000-000000000002';
+
+// Fallback customer ID for demo/legacy compatibility
+export const CUSTOMER_ID = '00000000-0000-0000-0000-000000000002';
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const token = getToken();
   const headers: Record<string, string> = {
-    'X-API-Key': API_KEY,
+    ...(token
+      ? { 'Authorization': `Bearer ${token}` }
+      : { 'X-API-Key': 'customer-demo-key' }),
     ...((options.headers as Record<string, string>) || {}),
   };
 
@@ -14,6 +20,14 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 
   const response = await fetch(`${API_BASE}${url}`, { ...options, headers });
 
+  if (response.status === 401) {
+    // Token expired — redirect to login
+    localStorage.removeItem('cc_token');
+    localStorage.removeItem('cc_user');
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(error.error || `Request failed: ${response.status}`);
@@ -22,7 +36,21 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   return response.json();
 }
 
+function getCustomerId(): string {
+  const raw = localStorage.getItem('cc_user');
+  if (raw) {
+    try {
+      const user = JSON.parse(raw);
+      if (user.customerId) return user.customerId;
+    } catch { /* fall through */ }
+  }
+  return CUSTOMER_ID;
+}
+
 export const api = {
+  // Auth
+  me: () => request<any>('/auth/me'),
+
   // Offers (public)
   listOffers: (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -34,31 +62,29 @@ export const api = {
   activateOffer: (offerId: string) =>
     request<any>('/activations', {
       method: 'POST',
-      body: JSON.stringify({ customerId: CUSTOMER_ID, offerId }),
+      body: JSON.stringify({ customerId: getCustomerId(), offerId }),
     }),
   listActivations: () =>
-    request<any>(`/activations?customerId=${CUSTOMER_ID}`),
+    request<any>(`/activations?customerId=${getCustomerId()}`),
 
   // Transactions
   simulateTransaction: (activationId: string, amount: number) =>
     request<any>('/transactions/simulate', {
       method: 'POST',
-      body: JSON.stringify({ customerId: CUSTOMER_ID, activationId, amount, cardLastFour: '4321' }),
+      body: JSON.stringify({ customerId: getCustomerId(), activationId, amount, cardLastFour: '4321' }),
     }),
-
-  // Transactions
   listTransactions: () =>
-    request<any>(`/transactions?customerId=${CUSTOMER_ID}`),
+    request<any>(`/transactions?customerId=${getCustomerId()}`),
 
   // Cashback
   getCashbackSummary: () =>
-    request<any>(`/transactions/cashback?customerId=${CUSTOMER_ID}`),
+    request<any>(`/transactions/cashback?customerId=${getCustomerId()}`),
 
   // Eligibility
   checkEligibility: (offerId: string) =>
     request<any>('/eligibility/check', {
       method: 'POST',
-      body: JSON.stringify({ customerId: CUSTOMER_ID, offerId }),
+      body: JSON.stringify({ customerId: getCustomerId(), offerId }),
     }),
 
   // Recommendations
@@ -67,5 +93,3 @@ export const api = {
   getSimilarOffers: (offerId: string) =>
     request<any>(`/recommendations/similar/${offerId}`),
 };
-
-export { CUSTOMER_ID };

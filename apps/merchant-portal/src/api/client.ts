@@ -1,9 +1,13 @@
+import { getToken } from '../lib/auth';
+
 const API_BASE = '/api/v1';
-const API_KEY = 'merchant-demo-key';
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const token = getToken();
   const headers: Record<string, string> = {
-    'X-API-Key': API_KEY,
+    ...(token
+      ? { 'Authorization': `Bearer ${token}` }
+      : { 'X-API-Key': 'merchant-demo-key' }),
     ...((options.headers as Record<string, string>) || {}),
   };
 
@@ -12,6 +16,13 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   }
 
   const response = await fetch(`${API_BASE}${url}`, { ...options, headers });
+
+  if (response.status === 401) {
+    localStorage.removeItem('cc_token');
+    localStorage.removeItem('cc_user');
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));
@@ -22,6 +33,9 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  // Auth
+  me: () => request<any>('/auth/me'),
+
   // Offers
   listOffers: (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -49,6 +63,7 @@ export const api = {
 
   // Recommendations & Insights
   getMerchantInsights: () => request<any>('/recommendations/merchant-insights'),
+  getNextOfferSuggestions: () => request<any>('/recommendations/merchant-next-offer'),
 
   // Analytics
   offerAnalytics: (merchantId?: string) => {

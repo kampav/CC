@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { authMiddleware } = require('./middleware/auth');
+const { initIdentitySchema } = require('./identity');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,7 +20,6 @@ const SERVICES = {
 };
 
 // ─── Static demo pages ──────────────────────────────
-// Served at /demo/* — no auth required
 app.use('/demo', express.static(path.join(__dirname, '../public')));
 
 // ─── Middleware ─────────────────────────────────────
@@ -51,21 +51,24 @@ app.get('/health', (req, res) => {
   res.json({
     service: 'bff',
     status: 'UP',
-    version: '0.1.0',
+    version: '1.1.0',
     timestamp: new Date().toISOString(),
     upstreamServices: SERVICES,
   });
 });
 
 // ─── Routes ────────────────────────────────────────
-app.use('/api/v1/offers', require('./routes/offers'));
-app.use('/api/v1/partners', require('./routes/partners'));
-app.use('/api/v1/activations', require('./routes/activations'));
-app.use('/api/v1/transactions', require('./routes/transactions'));
-app.use('/api/v1/eligibility', require('./routes/eligibility'));
-app.use('/api/v1/analytics', require('./routes/analytics'));
-app.use('/api/v1/campaigns', require('./routes/campaigns'));
-app.use('/api/v1/audit', require('./routes/audit'));
+app.use('/api/v1/auth',            require('./routes/auth'));
+app.use('/api/v1/exec',            require('./routes/exec'));
+app.use('/api/v1/commercial',      require('./routes/commercial'));
+app.use('/api/v1/offers',          require('./routes/offers'));
+app.use('/api/v1/partners',        require('./routes/partners'));
+app.use('/api/v1/activations',     require('./routes/activations'));
+app.use('/api/v1/transactions',    require('./routes/transactions'));
+app.use('/api/v1/eligibility',     require('./routes/eligibility'));
+app.use('/api/v1/analytics',       require('./routes/analytics'));
+app.use('/api/v1/campaigns',       require('./routes/campaigns'));
+app.use('/api/v1/audit',           require('./routes/audit'));
 app.use('/api/v1/recommendations', require('./routes/recommendations'));
 
 // ─── Error handler ─────────────────────────────────
@@ -80,10 +83,21 @@ app.use((err, req, res, _next) => {
 
 // ─── Start ─────────────────────────────────────────
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`BFF running on port ${PORT}`);
-    console.log('Upstream services:', SERVICES);
-  });
+  // Init identity schema before accepting requests
+  initIdentitySchema()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`BFF v1.1.0 running on port ${PORT}`);
+        console.log('Upstream services:', SERVICES);
+      });
+    })
+    .catch((err) => {
+      console.error('[startup] Identity schema init failed (DB may be unavailable):', err.message);
+      // Still start the server — Java services and demo keys still work
+      app.listen(PORT, () => {
+        console.log(`BFF v1.1.0 running on port ${PORT} (identity schema unavailable)`);
+      });
+    });
 }
 
 module.exports = app;

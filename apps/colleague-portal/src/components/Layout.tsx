@@ -1,11 +1,13 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getUser, clearToken } from '../lib/auth';
 
 const NAV_SECTIONS = [
   {
     title: 'Overview',
     items: [
       { path: '/', label: 'Dashboard' },
+      { path: '/exec-dashboard', label: 'Exec Dashboard' },
     ],
   },
   {
@@ -13,13 +15,20 @@ const NAV_SECTIONS = [
     items: [
       { path: '/offer-review', label: 'Offer Review Queue' },
       { path: '/merchant-onboarding', label: 'Merchant Onboarding' },
+      { path: '/commercial-onboarding', label: 'Commercial Onboarding' },
       { path: '/campaigns', label: 'Campaign Management' },
+    ],
+  },
+  {
+    title: 'Insights',
+    items: [
+      { path: '/customer-insights', label: 'Customer Insights' },
+      { path: '/analytics', label: 'Platform Analytics' },
     ],
   },
   {
     title: 'Monitoring',
     items: [
-      { path: '/analytics', label: 'Platform Analytics' },
       { path: '/audit', label: 'Audit Log' },
       { path: '/compliance', label: 'Compliance Rules' },
     ],
@@ -28,6 +37,13 @@ const NAV_SECTIONS = [
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const navigate  = useNavigate();
+  const user = getUser();
+
+  function handleLogout() {
+    clearToken();
+    navigate('/login');
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
@@ -83,11 +99,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         }}>
           <h1 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A' }}>Connected Commerce — Colleague Portal</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{
-              padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem',
-              background: '#FEF3C7', color: '#92400E', fontWeight: 600,
-            }}>ADMIN</span>
-            <span style={{ color: '#64748B', fontSize: '0.85rem' }}>Internal User</span>
+            <span style={{ padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', background: '#FEF3C7', color: '#92400E', fontWeight: 600 }}>
+              {user?.role || 'COLLEAGUE'}
+            </span>
+            <span style={{ color: '#64748B', fontSize: '0.85rem' }}>{user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Internal User'}</span>
+            <button onClick={handleLogout} style={{ padding: '0.2rem 0.6rem', background: 'transparent', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', color: '#64748B' }}>
+              Sign out
+            </button>
           </div>
         </header>
         <main style={{ padding: '2rem' }}>{children}</main>
