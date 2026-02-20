@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Personalisation | Connected Commerce</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;color:#1a2332}
+header{background:#1a0a00;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.2rem;font-weight:600;flex:1}
+header a{color:#ffb07a;font-size:.85rem;text-decoration:none}
+.config{background:#fff;border-bottom:1px solid #e2e8f0;padding:20px 32px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.78rem;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.4px}
+.field input,.field select{padding:9px 14px;border:1.5px solid #d0d8e4;border-radius:8px;font-size:.85rem;min-width:200px}
+.field input:focus,.field select:focus{outline:none;border-color:#b74a00}
+.key-wrap{position:relative}
+.key-wrap input{padding-right:80px;width:340px}
+.toggle-vis{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:.78rem;padding:4px 8px}
+button.run{padding:10px 24px;background:#b74a00;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;align-self:flex-end}
+button.run:hover{background:#8f3700}
+button.run:disabled{opacity:.5;cursor:default}
+.provider-note{font-size:.75rem;color:#888;margin-top:4px}
+.main{padding:24px 32px}
+.compare-header{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:16px}
+.col-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-radius:6px}
+.col-ai{background:#fff0e6;color:#b74a00}
+.col-rule{background:#e8f4ff;color:#0057b7}
+.grid-compare{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.col{display:flex;flex-direction:column;gap:14px}
+.offer-card{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden}
+.offer-img{width:100%;height:130px;object-fit:cover;background:#e2e8f0}
+.offer-body{padding:12px}
+.offer-rank{display:inline-block;background:#1a0a00;color:#fff;width:22px;height:22px;border-radius:50%;font-size:.72rem;font-weight:700;text-align:center;line-height:22px;margin-bottom:6px}
+.offer-category{font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:#b74a00;font-weight:600;margin-bottom:3px}
+.offer-title{font-size:.9rem;font-weight:700;margin-bottom:6px;line-height:1.3}
+.reason{background:#fff8f5;border-left:3px solid #b74a00;padding:8px 10px;font-size:.8rem;color:#555;line-height:1.4;margin-top:6px;border-radius:0 4px 4px 0;font-style:italic}
+.cashback{background:#fff0e6;color:#b74a00;padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:600}
+.cashback-rule{background:#e8f4ff;color:#0057b7;padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:600}
+.status-bar{font-size:.8rem;color:#666;margin-bottom:16px;padding:10px 14px;background:#fff;border-radius:8px;display:flex;justify-content:space-between;align-items:center}
+.source-badge{padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:600}
+.badge-ai{background:#fff0e6;color:#b74a00}
+.badge-rule{background:#e8f4ff;color:#0057b7}
+.empty{text-align:center;padding:60px;color:#888}
+.error{background:#fff5f5;border:1px solid #fca5a5;color:#b91c1c;padding:14px;border-radius:8px;font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+  <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#00B2A9"/><path d="M8 22L16 10l8 12H8z" fill="white"/></svg>
+  <h1>AI-Powered Personalisation</h1>
+  <a href="index.html">← Demo Home</a>
+</header>
+
+<div class="config">
+  <div class="field">
+    <label>Customer</label>
+    <select id="apiKey">
+      <option value="customer-demo-key">Demo Customer (ID: …0002)</option>
+      <option value="admin-demo-key">Demo Admin (ID: …0003)</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>API Key <span style="font-weight:400;color:#aaa">(server-side only — never exposed)</span></label>
+    <div class="key-wrap">
+      <input type="password" id="aiKey" placeholder="AIzaSy… Gemini · sk-ant-… Claude · sk-… OpenAI" autocomplete="off" oninput="updateProviderNote()">
+      <button class="toggle-vis" onclick="toggleKey()">Show</button>
+    </div>
+    <div class="provider-note" id="providerNote">Auto-detected: Gemini keys start with <strong>AIzaSy</strong>, OpenAI keys start with <strong>sk-</strong></div>
+  </div>
+
+  <div class="field">
+    <label>Results</label>
+    <select id="limit">
+      <option value="6">Top 6</option>
+      <option value="10">Top 10</option>
+    </select>
+  </div>
+
+  <button class="run" id="fetchBtn" onclick="load()">Run AI + Compare</button>
+</div>
+
+<div class="main">
+  <div id="statusBar" style="display:none" class="status-bar">
+    <span id="statusText"></span>
+    <span id="sourceBadges"></span>
+  </div>
+
+  <div id="results">
+    <div class="empty">Enter your AI API key and click "Run AI + Compare" to see personalised recommendations with AI reasoning, alongside rule-based results.</div>
+  </div>
+</div>
+
+<script>
+let keyVisible = false;
+
+function toggleKey() {
+  keyVisible = !keyVisible;
+  const inp = document.getElementById('aiKey');
+  inp.type = keyVisible ? 'text' : 'password';
+  document.querySelector('.toggle-vis').textContent = keyVisible ? 'Hide' : 'Show';
+}
+
+function updateProviderNote() {
+  const key = document.getElementById('aiKey').value.trim();
+  const note = document.getElementById('providerNote');
+  if (key.startsWith('sk-ant-')) {
+    note.innerHTML = '🟢 Detected: <strong>Anthropic Claude Haiku</strong> — fast &amp; cost-effective · console.anthropic.com';
+  } else if (key.startsWith('sk-')) {
+    note.innerHTML = '🟢 Detected: <strong>OpenAI GPT-4o-mini</strong> — platform.openai.com';
+  } else if (key.startsWith('AIza')) {
+    note.innerHTML = '🟢 Detected: <strong>Google Gemini 1.5 Flash</strong> — free tier · aistudio.google.com';
+  } else if (key.length > 5) {
+    note.innerHTML = '⚠️ Unrecognised prefix — defaulting to Gemini';
+  } else {
+    note.innerHTML = 'Paste any key — auto-detected: <strong>sk-ant-…</strong> Claude · <strong>sk-…</strong> OpenAI · <strong>AIza…</strong> Gemini';
+  }
+}
+
+async function load() {
+  const customerKey = document.getElementById('apiKey').value;
+  const aiKey = document.getElementById('aiKey').value.trim();
+  const limit = document.getElementById('limit').value;
+  const btn = document.getElementById('fetchBtn');
+
+  if (!aiKey) {
+    alert('Please enter your AI API key.');
+    return;
+  }
+
+  btn.disabled = true;
+  document.getElementById('statusBar').style.display = 'none';
+  document.getElementById('results').innerHTML = '<div class="empty">Calling AI… this may take a few seconds.</div>';
+
+  // Fetch both in parallel: AI path (with key) and rule-based (without key)
+  try {
+    const [aiRes, ruleRes] = await Promise.allSettled([
+      fetch(`/api/v1/recommendations/for-you?limit=${limit}`, {
+        headers: { 'X-API-Key': customerKey, 'X-AI-Key': aiKey }
+      }).then(r => r.json()),
+      fetch(`/api/v1/recommendations/for-you?limit=${limit}`, {
+        headers: { 'X-API-Key': customerKey }
+      }).then(r => r.json()),
+    ]);
+
+    const ai   = aiRes.status === 'fulfilled'   ? aiRes.value   : null;
+    const rule = ruleRes.status === 'fulfilled' ? ruleRes.value : null;
+
+    const statusBar = document.getElementById('statusBar');
+    statusBar.style.display = 'flex';
+    document.getElementById('statusText').textContent =
+      `${ai?.totalCandidates ?? '?'} candidates evaluated · ${ai?.activatedCount ?? '?'} already activated`;
+    document.getElementById('sourceBadges').innerHTML =
+      `<span class="source-badge badge-ai">${ai?.source || 'error'}</span> &nbsp;
+       <span class="source-badge badge-rule">${rule?.source || 'error'}</span>`;
+
+    renderCompare(ai, rule);
+  } catch(e) {
+    document.getElementById('results').innerHTML = `<div class="error">Request failed: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+}
+
+function renderCompare(ai, rule) {
+  const aiOffers = ai?.recommendations || [];
+  const ruleOffers = rule?.recommendations || [];
+
+  if (!aiOffers.length && !ruleOffers.length) {
+    document.getElementById('results').innerHTML = '<div class="empty">No recommendations returned.</div>';
+    return;
+  }
+
+  // Show error if AI fell back to rule-based
+  const aiError = ai?.source === 'rule-based' ? `
+    <div class="error" style="margin-bottom:16px">
+      ⚠️ AI fell back to rule-based. Check your API key and quota. The BFF logs will show the exact error.
+    </div>` : '';
+
+  const aiCol = aiOffers.map((o, i) => renderCard(o, i, 'ai')).join('');
+  const ruleCol = ruleOffers.map((o, i) => renderCard(o, i, 'rule')).join('');
+
+  document.getElementById('results').innerHTML = `
+    ${aiError}
+    <div class="compare-header">
+      <div class="col-title col-ai">🤖 AI Recommendations (${aiOffers.length})</div>
+      <div class="col-title col-rule">📊 Rule-Based (${ruleOffers.length})</div>
+    </div>
+    <div class="grid-compare">
+      <div class="col">${aiCol || '<div class="empty">No AI results.</div>'}</div>
+      <div class="col">${ruleCol || '<div class="empty">No rule-based results.</div>'}</div>
+    </div>`;
+}
+
+function renderCard(o, i, mode) {
+  const daysLeft = o.endDate ? Math.ceil((new Date(o.endDate) - Date.now()) / 86400000) : null;
+  const isUrgent = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
+  const cashbackClass = mode === 'ai' ? 'cashback' : 'cashback-rule';
+  const catColor = mode === 'ai' ? '#b74a00' : '#0057b7';
+
+  return `
+  <div class="offer-card">
+    <img class="offer-img" src="${o.imageUrl || ''}" alt="${o.title}" onerror="this.style.background='#d0d8e4'">
+    <div class="offer-body">
+      <span class="offer-rank">${i + 1}</span>
+      <div class="offer-category" style="color:${catColor}">${o.category || 'General'}</div>
+      <div class="offer-title">${o.title}</div>
+      ${o._reason ? `<div class="reason">"${o._reason}"</div>` : ''}
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        ${o.cashbackRate ? `<span class="${cashbackClass}">${o.cashbackRate}% cashback</span>` : ''}
+        ${isUrgent ? `<span style="background:#fff3cd;color:#856404;padding:3px 10px;border-radius:12px;font-size:.75rem">⚡ ${daysLeft}d left</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: offer-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/connected_commerce
+    username: commerce
+    password: commerce_dev
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: offers
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas: offers
+    default-schema: offers
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /api/v1/offer-service/api-docs
+  swagger-ui:
+    path: /api/v1/offer-service/swagger-ui
+
+logging:
+  level:
+    com.lbg.commerce: DEBUG
+  pattern:
+    console: "%d{ISO8601} [%thread] [%X{correlationId:-none}] %-5level %logger{36} - %msg%n"

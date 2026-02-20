@@ -1,0 +1,40 @@
+# Java
+*.class
+*.jar
+*.war
+target/
+build/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Node
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Test
+coverage/
+*.lcov
+.nyc_output/
+
+# Build artifacts
+*.pid
+*.seed
+*.pid.lock

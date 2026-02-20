@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Personalisation Demo | Connected Commerce</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;color:#1a2332}
+header{background:#003A6E;color:#fff;padding:20px 40px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.4rem;font-weight:600}
+header span{font-size:.85rem;opacity:.7;margin-left:auto}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:40px;max-width:960px;margin:0 auto}
+.card{background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.08);text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:12px;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:600;letter-spacing:.5px;width:fit-content}
+.badge-rule{background:#e8f4ff;color:#0057b7}
+.badge-ai{background:#fff0e6;color:#b74a00}
+.card h2{font-size:1.25rem;font-weight:700}
+.card p{font-size:.9rem;color:#555;line-height:1.5}
+.card ul{margin-left:16px;font-size:.85rem;color:#666;line-height:1.8}
+.btn{margin-top:auto;padding:12px 20px;border-radius:8px;font-weight:600;font-size:.9rem;text-align:center}
+.btn-rule{background:#003A6E;color:#fff}
+.btn-ai{background:#b74a00;color:#fff}
+footer{text-align:center;padding:24px;color:#888;font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#00B2A9"/><path d="M8 22L16 10l8 12H8z" fill="white"/></svg>
+  <h1>Personalisation Demo</h1>
+  <span>Connected Commerce Platform</span>
+</header>
+
+<div class="cards">
+  <a class="card" href="rule-based.html">
+    <span class="badge badge-rule">ALWAYS AVAILABLE</span>
+    <h2>Rule-Based Recommendations</h2>
+    <p>Deterministic, explainable scoring using customer activation history. No API key required.</p>
+    <ul>
+      <li>Category preference matching</li>
+      <li>Brand affinity scoring</li>
+      <li>Cashback rate boosting</li>
+      <li>Urgency / expiry signals</li>
+    </ul>
+    <div class="btn btn-rule">View Rule-Based Demo →</div>
+  </a>
+
+  <a class="card" href="ai.html">
+    <span class="badge badge-ai">REQUIRES API KEY</span>
+    <h2>AI-Powered Recommendations</h2>
+    <p>Uses Gemini (or compatible) to rank offers with natural-language reasoning per recommendation.</p>
+    <ul>
+      <li>Configurable AI provider</li>
+      <li>Personalised reasoning per offer</li>
+      <li>Compare vs rule-based</li>
+      <li>25M-customer scalable fallback</li>
+    </ul>
+    <div class="btn btn-ai">View AI Demo →</div>
+  </a>
+</div>
+
+<footer>Connected Commerce Platform · Demo Portal · BFF running on port 3000</footer>
+</body>
+</html>

@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  bff:
+    name: BFF (Node.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/bff
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: services/bff/package-lock.json
+      - run: npm ci
+      - run: npm test -- --passWithNoTests
+
+  offer-service:
+    name: Offer Service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/offer-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+      - run: ./mvnw test -B --no-transfer-progress
+
+  redemption-service:
+    name: Redemption Service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/redemption-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+      - run: ./mvnw test -B --no-transfer-progress
+
+  frontend:
+    name: Frontend (build check)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [customer-app, merchant-portal, colleague-portal]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - run: npm run build

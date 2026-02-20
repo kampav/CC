@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rule-Based Personalisation | Connected Commerce</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;color:#1a2332}
+header{background:#003A6E;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.2rem;font-weight:600;flex:1}
+header a{color:#7fb3e8;font-size:.85rem;text-decoration:none}
+.layout{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 56px)}
+.sidebar{background:#fff;border-right:1px solid #e2e8f0;padding:24px;overflow-y:auto}
+.main{padding:24px;overflow-y:auto}
+h2{font-size:1rem;font-weight:700;margin-bottom:12px;color:#003A6E}
+.algo-step{display:flex;gap:10px;margin-bottom:14px;align-items:flex-start}
+.step-num{background:#003A6E;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:2px}
+.step-body h3{font-size:.85rem;font-weight:600;margin-bottom:2px}
+.step-body p{font-size:.8rem;color:#666;line-height:1.4}
+.weight{font-weight:700;color:#003A6E}
+.prefs{margin-top:20px}
+.pref-bar{margin-bottom:8px}
+.pref-label{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:3px}
+.pref-track{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+.pref-fill{height:100%;background:#003A6E;border-radius:4px;transition:width .6s ease}
+.controls{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+select,input{padding:8px 12px;border:1px solid #d0d8e4;border-radius:8px;font-size:.85rem;background:#fff}
+button{padding:8px 20px;background:#003A6E;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer}
+button:hover{background:#002a50}
+button:disabled{opacity:.5;cursor:default}
+.status{font-size:.8rem;color:#666;margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.offer-card{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden}
+.offer-img{width:100%;height:140px;object-fit:cover;background:#e2e8f0}
+.offer-body{padding:14px}
+.offer-category{font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:#0057b7;font-weight:600;margin-bottom:4px}
+.offer-title{font-size:.95rem;font-weight:700;margin-bottom:6px;line-height:1.3}
+.offer-meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.cashback{background:#e8f4ff;color:#0057b7;padding:3px 10px;border-radius:12px;font-size:.8rem;font-weight:600}
+.score-pill{background:#f0f4f8;color:#555;padding:3px 10px;border-radius:12px;font-size:.75rem}
+.urgency{background:#fff3cd;color:#856404;padding:3px 10px;border-radius:12px;font-size:.75rem;margin-top:6px;display:inline-block}
+.empty{text-align:center;padding:60px;color:#888}
+.tag-match{font-size:.72rem;color:#198754;font-weight:600;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#00B2A9"/><path d="M8 22L16 10l8 12H8z" fill="white"/></svg>
+  <h1>Rule-Based Personalisation</h1>
+  <a href="index.html">← Demo Home</a>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <h2>Algorithm</h2>
+    <div class="algo-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Activation History</h3>
+        <p>Fetch all offers the customer has activated, enrich with category &amp; brand from offer catalogue.</p>
+      </div>
+    </div>
+    <div class="algo-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Build Preference Profile</h3>
+        <p>Count category/brand activations → preference scores used in step 4.</p>
+      </div>
+    </div>
+    <div class="algo-step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Filter Activated Offers</h3>
+        <p>Exclude offers the customer has already activated.</p>
+      </div>
+    </div>
+    <div class="algo-step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Score Each Candidate</h3>
+        <p>
+          <span class="weight">+10× category score</span> if category matches preference<br>
+          <span class="weight">+5× brand score</span> if brand matches preference<br>
+          <span class="weight">+cashbackRate</span> (e.g. 15% → +15)<br>
+          <span class="weight">+15 urgency bonus</span> if expiring within 7 days
+        </p>
+      </div>
+    </div>
+    <div class="algo-step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>Sort &amp; Return Top N</h3>
+        <p>Sort descending by score, return top N (default 6).</p>
+      </div>
+    </div>
+
+    <div class="prefs" id="prefsPanel" style="display:none">
+      <hr style="margin:16px 0;border-color:#e2e8f0">
+      <h2>Customer Preferences</h2>
+      <div id="categoryBars"></div>
+      <div style="margin-top:12px">
+        <h2>Brand Affinities</h2>
+        <div id="brandBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="controls">
+      <select id="apiKey">
+        <option value="customer-demo-key">Demo Customer (ID: …0002)</option>
+        <option value="admin-demo-key">Demo Admin (ID: …0003)</option>
+      </select>
+      <select id="limit">
+        <option value="6">Top 6</option>
+        <option value="10">Top 10</option>
+        <option value="15">Top 15</option>
+      </select>
+      <button id="fetchBtn" onclick="load()">Fetch Recommendations</button>
+      <span class="status" id="status"></span>
+    </div>
+
+    <div id="results">
+      <div class="empty">Click "Fetch Recommendations" to load personalised offers.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function load() {
+  const key = document.getElementById('apiKey').value;
+  const limit = document.getElementById('limit').value;
+  const btn = document.getElementById('fetchBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = 'Loading…';
+
+  try {
+    const r = await fetch(`/api/v1/recommendations/for-you?limit=${limit}`, {
+      headers: { 'X-API-Key': key }
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+
+    status.textContent = `Source: ${data.source} · ${data.totalCandidates} candidates · ${data.activatedCount} already activated`;
+    renderPrefs(data.categoryPreferences || {}, data.brandPreferences || {});
+    renderOffers(data.recommendations || [], data.categoryPreferences || {}, data.brandPreferences || {});
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    document.getElementById('results').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+}
+
+function renderPrefs(cats, brands) {
+  const panel = document.getElementById('prefsPanel');
+  panel.style.display = 'block';
+
+  const maxCat = Math.max(1, ...Object.values(cats));
+  document.getElementById('categoryBars').innerHTML = Object.entries(cats)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v]) => `
+      <div class="pref-bar">
+        <div class="pref-label"><span>${k}</span><span>${v} acts</span></div>
+        <div class="pref-track"><div class="pref-fill" style="width:${Math.round(v/maxCat*100)}%"></div></div>
+      </div>`).join('') || '<p style="font-size:.8rem;color:#888">No activations yet</p>';
+
+  const maxBrand = Math.max(1, ...Object.values(brands));
+  document.getElementById('brandBars').innerHTML = Object.entries(brands)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v]) => `
+      <div class="pref-bar">
+        <div class="pref-label"><span>${k}</span><span>${v} acts</span></div>
+        <div class="pref-track"><div class="pref-fill" style="width:${Math.round(v/maxBrand*100)}%;background:#00B2A9"></div></div>
+      </div>`).join('') || '<p style="font-size:.8rem;color:#888">No activations yet</p>';
+}
+
+function renderOffers(offers, cats, brands) {
+  if (!offers.length) {
+    document.getElementById('results').innerHTML = '<div class="empty">No recommendations returned.</div>';
+    return;
+  }
+
+  const html = offers.map(o => {
+    const catScore = (cats[o.category] || 0) * 10;
+    const brandScore = (brands[o.brand] || 0) * 5;
+    const totalScore = catScore + brandScore + (o.cashbackRate || 0);
+    const daysLeft = o.endDate ? Math.ceil((new Date(o.endDate) - Date.now()) / 86400000) : null;
+    const isUrgent = daysLeft !== null && daysLeft <= 7;
+    const catMatch = cats[o.category] ? `✓ ${o.category} match (+${catScore})` : '';
+    const brandMatch = brands[o.brand] ? `✓ ${o.brand} match (+${brandScore})` : '';
+
+    return `
+    <div class="offer-card">
+      <img class="offer-img" src="${o.imageUrl || ''}" alt="${o.title}" onerror="this.style.background='#d0d8e4'">
+      <div class="offer-body">
+        <div class="offer-category">${o.category || 'General'}</div>
+        <div class="offer-title">${o.title}</div>
+        ${catMatch ? `<div class="tag-match">${catMatch}${brandMatch ? ' · ' + brandMatch : ''}</div>` : ''}
+        <div class="offer-meta">
+          ${o.cashbackRate ? `<span class="cashback">${o.cashbackRate}% cashback</span>` : '<span class="cashback">Experience</span>'}
+          <span class="score-pill">Score: ${totalScore.toFixed(0)}</span>
+        </div>
+        ${isUrgent ? `<div class="urgency">⚡ Expires in ${daysLeft} day${daysLeft===1?'':'s'}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('results').innerHTML = `<div class="grid">${html}</div>`;
+}
+</script>
+</body>
+</html>

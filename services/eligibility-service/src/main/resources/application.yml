@@ -1,0 +1,27 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: eligibility-service
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+# Eligibility rules configuration
+eligibility:
+  max-active-offers-per-customer: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.lbg.commerce: DEBUG
+  pattern:
+    console: "%d{ISO8601} [%thread] [%X{correlationId:-none}] %-5level %logger{36} - %msg%n"
