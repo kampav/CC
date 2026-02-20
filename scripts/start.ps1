@@ -8,7 +8,10 @@ $logsDir = (New-Item -ItemType Directory -Force -Path $LogsDir).FullName
 
 function Stop-Port($port) {
     $c = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
-    if ($c) { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue }
+    if ($c) {
+        Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 300
+    }
 }
 
 function Start-JavaBg($name, $port, $dir) {
@@ -27,7 +30,20 @@ function Start-NodeBg($name, $port, $dir) {
         -RedirectStandardOutput "$logsDir\$name.log" `
         -RedirectStandardError  "$logsDir\$name-err.log" `
         -NoNewWindow -PassThru
-    Write-Host ("  {0,-25} http://localhost:{1}  [PID {2}]" -f $name, $port, $proc.Id) -ForegroundColor Yellow
+
+    # Wait up to 8s for the port to open, then confirm or warn
+    $ok = $false
+    for ($i = 0; $i -lt 16; $i++) {
+        Start-Sleep -Milliseconds 500
+        if (-not $proc.HasExited -and (Get-NetTCPConnection -LocalPort $port -State Listen -EA SilentlyContinue)) {
+            $ok = $true; break
+        }
+    }
+    if ($ok) {
+        Write-Host ("  {0,-25} http://localhost:{1}  [PID {2}] OK" -f $name, $port, $proc.Id) -ForegroundColor Green
+    } else {
+        Write-Host ("  {0,-25} FAILED — check logs\{1}-err.log" -f $name, $name) -ForegroundColor Red
+    }
 }
 
 function Start-ViteBg($name, $port, $dir) {
@@ -40,17 +56,17 @@ function Start-ViteBg($name, $port, $dir) {
 }
 
 Write-Host ""
-Write-Host "Connected Commerce Platform" -ForegroundColor Cyan
-Write-Host "==============================" -ForegroundColor Cyan
+Write-Host "Connected Commerce Platform v1.1.0" -ForegroundColor Cyan
+Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Java microservices (wait ~90s to start):" -ForegroundColor White
+Write-Host "Java microservices (wait ~90s to compile):" -ForegroundColor White
 Start-JavaBg "offer-service"       8081 "$root\services\offer-service"
 Start-JavaBg "partner-service"     8082 "$root\services\partner-service"
 Start-JavaBg "eligibility-service" 8083 "$root\services\eligibility-service"
 Start-JavaBg "redemption-service"  8084 "$root\services\redemption-service"
 
 Write-Host ""
-Write-Host "BFF:" -ForegroundColor White
+Write-Host "BFF (Node.js):" -ForegroundColor White
 Start-NodeBg "bff" 3000 "$root\services\bff"
 
 Write-Host ""
@@ -62,10 +78,11 @@ Start-ViteBg "colleague-portal"  5175 "$root\apps\colleague-portal"
 Write-Host ""
 Write-Host "All services launched." -ForegroundColor Green
 Write-Host ""
-Write-Host "  http://localhost:5173   Customer App"
-Write-Host "  http://localhost:5174   Merchant Portal"
-Write-Host "  http://localhost:5175   Colleague Portal"
-Write-Host "  http://localhost:3000/demo   AI Demo"
+Write-Host "  http://localhost:5173   Customer App    (customer@demo.com / demo1234)"
+Write-Host "  http://localhost:5174   Merchant Portal (merchant@demo.com / demo1234)"
+Write-Host "  http://localhost:5175   Colleague Portal (colleague@demo.com / demo1234)"
+Write-Host "  http://localhost:5175   Exec Dashboard   (exec@demo.com / demo1234)"
+Write-Host "  http://localhost:3000/demo   AI Demo (no login)"
 Write-Host ""
 Write-Host "Logs: $logsDir" -ForegroundColor DarkGray
 Write-Host "Stop: .\scripts\stop.ps1" -ForegroundColor DarkGray
