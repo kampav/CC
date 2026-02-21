@@ -1,0 +1,4 @@
+﻿# GCP profile - Kafka publish failures are silent (fire-and-forget pattern)
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092

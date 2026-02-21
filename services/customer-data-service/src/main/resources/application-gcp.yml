@@ -1,0 +1,7 @@
+﻿# GCP profile - disables Kafka consumers (data already seeded via Flyway)
+kafka:
+  consumers:
+    enabled: false
+spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration

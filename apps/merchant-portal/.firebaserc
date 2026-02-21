@@ -1,0 +1,12 @@
+﻿{
+  "projects": {
+    "default": "gen-lang-client-0315293206"
+  },
+  "targets": {
+    "gen-lang-client-0315293206": {
+      "hosting": {
+        "cc-merchant-0315": ["cc-merchant-0315"]
+      }
+    }
+  }
+}

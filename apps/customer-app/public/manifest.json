@@ -1,0 +1,39 @@
+﻿{
+  "name": "Connected Commerce",
+  "short_name": "CC Rewards",
+  "description": "Bank cashback rewards and personalised offers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a2342",
+  "theme_color": "#0a2342",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "shopping"],
+  "shortcuts": [
+    {
+      "name": "My Offers",
+      "short_name": "Offers",
+      "url": "/browse",
+      "description": "Browse available cashback offers"
+    },
+    {
+      "name": "My Cashback",
+      "short_name": "Cashback",
+      "url": "/cashback",
+      "description": "View your cashback balance"
+    }
+  ]
+}
