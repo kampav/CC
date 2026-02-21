@@ -194,13 +194,15 @@ score = categoryAffinity(0-40)     // normalised by real spending from transacti
 
 ---
 
-## Feature: GCP Infrastructure (v1.2.0)
+## Feature: GCP Infrastructure (v1.3.1)
 
-**Status:** SCAFFOLD (files ready, not deployed)
+**Status:** DEPLOY-READY (v1.3.1 adds labels + monitoring)
 
 | File | What It Does |
 |------|-------------|
-| `infrastructure/gcp/deploy.ps1` | Master deploy script — Cloud SQL + Docker build/push + Cloud Run + Firebase |
+| `scripts/install-gcp-prereqs.ps1` | NEW v1.3.1 — prereqs installer + authenticator; run once before first deploy |
+| `infrastructure/gcp/deploy.ps1` | Master deploy script — Cloud SQL + Docker build/push + Cloud Run + Firebase + monitoring |
+| `infrastructure/gcp/setup-monitoring.ps1` | NEW v1.3.1 — 4 uptime checks + email alert policy; called from deploy.ps1 |
 | `infrastructure/gcp/README.md` | Step-by-step deploy guide, cost breakdown, troubleshooting |
 | `infrastructure/gcp/cloud-run/*.yaml` | Cloud Run YAML manifests (reference) |
 | `infrastructure/gcp/pubsub/topics.yaml` | Pub/Sub topics (future Kafka replacement) |
@@ -219,6 +221,14 @@ GCP sites (after deploy):
 - https://cc-customer-0315.web.app -- Customer App (PWA-installable)
 - https://cc-merchant-0315.web.app -- Merchant Portal
 - https://cc-colleague-0315.web.app -- Colleague Portal
+
+**Resource labels** (v1.3.1) applied at deploy time to all Cloud Run + Cloud SQL:
+`app=connected-commerce, env=demo, version=v1-3-0, team=engineering`
+
+**Monitoring** (v1.3.1):
+- 4 uptime checks at 5-min intervals: BFF /health, cc-customer-0315.web.app, cc-merchant-0315.web.app, cc-colleague-0315.web.app
+- Email alert on failure > 60s → GCP account email; auto-closes after 24h
+- Console: https://console.cloud.google.com/monitoring/uptime?project=gen-lang-client-0315293206
 
 ---
 

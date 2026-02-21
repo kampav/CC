@@ -196,10 +196,24 @@ JAVA_OPTS=-Xms512m -Xmx1g -XX:+UseG1GC
 
 ## GCP Deployment (v1.3.0 -- Deploy-Ready)
 
-Run the deploy script after installing gcloud + Docker Desktop + Firebase CLI:
+**First time? Run the prereqs installer first:**
 
 ```powershell
-.\infrastructure\gcp\deploy.ps1          # Full deploy (~15 min first run)
+# Step 1: Install + authenticate gcloud, Docker, Firebase CLI (one-time)
+.\scripts\install-gcp-prereqs.ps1
+
+# Step 2: Full deploy (~15 min first run)
+.\infrastructure\gcp\deploy.ps1
+```
+
+The prereqs script checks for gcloud CLI, Docker Desktop, and Firebase CLI. It prints exact
+download links for anything missing, then authenticates everything and creates the Firebase
+Hosting sites. Safe to re-run if you get interrupted.
+
+**Subsequent deploys:**
+
+```powershell
+.\infrastructure\gcp\deploy.ps1          # Full re-deploy
 .\infrastructure\gcp\deploy.ps1 -SkipBuild     # Re-deploy without rebuild
 .\infrastructure\gcp\deploy.ps1 -OnlyFrontend  # React apps only
 ```

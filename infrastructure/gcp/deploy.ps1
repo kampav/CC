@@ -51,6 +51,8 @@ $FRONTENDS = @(
     @{ Name="colleague-portal"; Site="cc-colleague-0315"; Dir="apps/colleague-portal" }
 )
 
+$LABELS = "app=connected-commerce,env=demo,version=v1-3-0,team=engineering"
+
 # ---------------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------------
@@ -148,7 +150,7 @@ if (-not $OnlyFrontend) {
     $dbStatus = gcloud sql instances describe $DB_INSTANCE --format="value(state)" 2>$null
     if (-not $dbStatus) {
         Write-Host "    Creating Cloud SQL instance (db-f1-micro, ~7 min)..." -ForegroundColor Yellow
-        Invoke-Cmd "gcloud sql instances create $DB_INSTANCE --database-version=POSTGRES_14 --tier=db-f1-micro --region=$REGION --storage-size=10 --storage-type=SSD --no-backup --quiet"
+        Invoke-Cmd "gcloud sql instances create $DB_INSTANCE --database-version=POSTGRES_14 --tier=db-f1-micro --region=$REGION --storage-size=10 --storage-type=SSD --no-backup --labels=$LABELS --quiet"
         Write-OK "Cloud SQL instance created"
 
         # Generate password
@@ -226,6 +228,7 @@ if (-not $OnlyFrontend) {
             "--port=$($svc.Port) " +
             "--set-env-vars=SPRING_PROFILES_ACTIVE=gcp,SPRING_DATASOURCE_URL=`"$DB_URL`",SPRING_DATASOURCE_USERNAME=$DB_USER,SPRING_DATASOURCE_PASSWORD=`"$DB_PASS`" " +
             "--add-cloudsql-instances=$DB_CONNECTION " +
+            "--labels=$LABELS " +
             "--quiet"
 
         Invoke-Cmd $deployCmd
@@ -266,6 +269,7 @@ if (-not $OnlyFrontend) {
         "--port=3000 " +
         "--set-env-vars=$bffEnvVars " +
         "--add-cloudsql-instances=$DB_CONNECTION " +
+        "--labels=$LABELS " +
         "--quiet"
 
     Invoke-Cmd $bffCmd
@@ -323,6 +327,14 @@ foreach ($fe in $FRONTENDS) {
     } finally {
         Pop-Location
     }
+}
+
+# ---------------------------------------------------------------------------
+# MONITORING
+# ---------------------------------------------------------------------------
+if (-not $OnlyFrontend -and $bffUrl) {
+    Write-Step "Setting up monitoring"
+    & "$SCRIPT_DIR\setup-monitoring.ps1" -BffUrl $bffUrl -ProjectId $PROJECT_ID
 }
 
 # ---------------------------------------------------------------------------

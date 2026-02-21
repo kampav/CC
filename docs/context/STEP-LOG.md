@@ -317,6 +317,37 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 
 ---
 
+## Phase 12: v1.3.1 -- GCP Resource Labels + Uptime Monitoring (2026-02-21)
+
+### Resource Labels
+- All Cloud Run services (6 Java + BFF) and Cloud SQL instance now tagged at deploy time with:
+  `app=connected-commerce, env=demo, version=v1-3-0, team=engineering`
+- Label variable `$LABELS` defined once at top of `deploy.ps1` for easy updates
+- Enables cost allocation, filtering, and governance in Cloud Console
+
+### Uptime Monitoring (setup-monitoring.ps1)
+- NEW `infrastructure/gcp/setup-monitoring.ps1` -- standalone, called from `deploy.ps1`
+- Enables `monitoring.googleapis.com` API
+- Creates email notification channel "CC Platform Alerts" targeted at GCP account email
+- Creates 4 uptime checks at 5-min intervals:
+  - `cc-bff-health` → BFF Cloud Run URL /health
+  - `cc-customer-site` → cc-customer-0315.web.app/
+  - `cc-merchant-site` → cc-merchant-0315.web.app/
+  - `cc-colleague-site` → cc-colleague-0315.web.app/
+- Creates alerting policy: email alert if any check fails > 60s; auto-closes after 24h
+- All steps idempotent (safe to re-run)
+
+### Prerequisites Installer (install-gcp-prereqs.ps1)
+- NEW `scripts/install-gcp-prereqs.ps1` -- run before first deploy
+- Checks for gcloud, Docker Desktop, npm; prints exact download URLs for any missing
+- Installs Firebase CLI via npm if absent
+- Runs `gcloud auth login` + `gcloud auth configure-docker`
+- Runs `firebase login` (skips if already logged in)
+- Creates all 3 Firebase Hosting sites (idempotent)
+- Prints "Ready to deploy!" + next-step command
+
+---
+
 ## Current State (2026-02-21) -- v1.3.0
 
 **All services (10):**
