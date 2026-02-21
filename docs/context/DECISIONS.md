@@ -112,3 +112,24 @@
 **Why:** Realistic demonstration of event-driven architecture pattern. Shows how bank systems produce events and downstream services consume them.
 **GCP mapping:** Kafka topics map 1:1 to Cloud Pub/Sub topics for GCP deployment.
 **Trade-off:** Consumers are scaffolded but simulation is via seed data — actual event production would require a separate simulator service.
+
+## ADR-018: Firebase Hosting Rewrite for Zero-CORS GCP Deploy (v1.3.0)
+**Date:** 2026-02-21
+**What we chose:** Firebase Hosting serves the 3 React apps and rewrites `/api/**` to the BFF Cloud Run service via `"run": { "serviceId": "bff" }` — no custom domain, no API gateway.
+**Why:** Browser sees all requests going to the same Firebase origin. Zero CORS configuration needed. React apps call `/api/v1/...` unchanged — identical to local dev. Firebase Hosting is free. Eliminates Cloud Endpoints cost.
+**Implementation:** `apps/*/firebase.json` with `rewrites` array. `.firebaserc` links to `gen-lang-client-0315293206`.
+**Trade-off:** Firebase rewrite only works for Cloud Run services in the same GCP project and region. Not suitable if BFF is in a different project/region.
+
+## ADR-019: Kafka Disable via @ConditionalOnProperty + GCP Spring Profile (v1.3.0)
+**Date:** 2026-02-21
+**What we chose:** Java Kafka consumers annotated with `@ConditionalOnProperty(name="kafka.consumers.enabled", havingValue="true", matchIfMissing=true)`. `application-gcp.yml` sets `kafka.consumers.enabled: false` and excludes `KafkaAutoConfiguration`.
+**Why:** GCP demo has no Kafka broker. All demo data is seeded via Flyway V2 migrations. Disabling Kafka at the Spring bean level means no code changes needed between local and GCP — just activate the `gcp` Spring profile.
+**Activation:** Set `SPRING_PROFILES_ACTIVE=gcp` as a Cloud Run environment variable.
+**Trade-off:** Kafka consumer code is dead on GCP. For a real GCP deployment, replace Kafka with Cloud Pub/Sub subscriptions and re-enable consumers.
+
+## ADR-020: Scale-to-Zero Java Services on Cloud Run (v1.3.0)
+**Date:** 2026-02-21
+**What we chose:** Java microservices deploy with `min-instances=0`. BFF deploys with `min-instances=1`.
+**Why:** Demo traffic is sporadic — most of the time services are idle. Scale-to-zero eliminates idle compute cost entirely. BFF keeps one warm instance for instant response on first page load.
+**Cold start impact:** Java services take ~15s to start from cold. For demo, pre-warm by opening each service URL once before presenting.
+**Cost:** Cloud Run free tier covers demo scale. BFF min-instances=1 costs ~$0/month at 512MB (well within Cloud Run free tier's 180,000 vCPU-seconds/month).

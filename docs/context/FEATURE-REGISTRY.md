@@ -4,7 +4,7 @@
 >
 > **FOR AI:** When asked to change a feature, ALWAYS consult this registry first. Update it after every change.
 >
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 
 ---
 
@@ -200,10 +200,40 @@ score = categoryAffinity(0-40)     // normalised by real spending from transacti
 
 | File | What It Does |
 |------|-------------|
-| `infrastructure/gcp/cloud-run/*.yaml` | Cloud Run manifests per service (min=1, max=100 replicas) |
-| `infrastructure/gcp/pubsub/topics.yaml` | Pub/Sub topics (replaces Kafka on GCP) |
-| `infrastructure/gcp/cloud-sql/README.md` | Cloud SQL connection setup |
-| `infrastructure/gcp/firebase/firebase.json` | Firebase Hosting for 3 React apps |
+| `infrastructure/gcp/deploy.ps1` | Master deploy script — Cloud SQL + Docker build/push + Cloud Run + Firebase |
+| `infrastructure/gcp/README.md` | Step-by-step deploy guide, cost breakdown, troubleshooting |
+| `infrastructure/gcp/cloud-run/*.yaml` | Cloud Run YAML manifests (reference) |
+| `infrastructure/gcp/pubsub/topics.yaml` | Pub/Sub topics (future Kafka replacement) |
+| `infrastructure/gcp/cloud-sql/README.md` | Cloud SQL connection reference |
+| `infrastructure/gcp/firebase/firebase.json` | Firebase Hosting reference |
+| `apps/customer-app/firebase.json` | Firebase Hosting for customer app (rewrites /api/** to BFF Cloud Run) |
+| `apps/customer-app/.firebaserc` | Links to GCP project gen-lang-client-0315293206, site cc-customer-0315 |
+| `apps/merchant-portal/firebase.json` | Firebase Hosting for merchant portal, site cc-merchant-0315 |
+| `apps/colleague-portal/firebase.json` | Firebase Hosting for colleague portal, site cc-colleague-0315 |
+| `services/*/Dockerfile` | Multi-stage Docker images for all 7 services (6 Java + BFF Node.js) |
+| `services/customer-data-service/src/main/resources/application-gcp.yml` | Kafka disable + KafkaAutoConfiguration exclude |
+| `services/transaction-data-service/src/main/resources/application-gcp.yml` | Kafka disable + KafkaAutoConfiguration exclude |
+| `services/offer-service/src/main/resources/application-gcp.yml` | Dummy Kafka bootstrap-servers (publisher is fire-and-forget) |
+
+GCP sites (after deploy):
+- https://cc-customer-0315.web.app -- Customer App (PWA-installable)
+- https://cc-merchant-0315.web.app -- Merchant Portal
+- https://cc-colleague-0315.web.app -- Colleague Portal
+
+---
+
+## Feature: PWA (Progressive Web App) -- v1.3.0
+
+**Status:** COMPLETE
+
+| File | What It Does |
+|------|-------------|
+| `apps/customer-app/public/manifest.json` | PWA manifest (name, theme, icons, display:standalone, shortcuts) |
+| `apps/customer-app/public/sw.js` | Service worker: cache-first for static assets, network-first for /api/ |
+| `apps/customer-app/index.html` | PWA meta tags (theme-color, apple-mobile-web-app-*) + SW registration script |
+
+Install on Android: Chrome > Add to Home Screen
+Install on iOS: Safari > Share > Add to Home Screen
 
 ---
 

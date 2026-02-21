@@ -1,6 +1,6 @@
 # Connected Commerce -- Colleague Onboarding
 
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 
 ## What Is This?
 
@@ -194,12 +194,21 @@ JAVA_OPTS=-Xms512m -Xmx1g -XX:+UseG1GC
 
 ---
 
-## GCP Deployment (Scaffold Ready)
+## GCP Deployment (v1.3.0 -- Deploy-Ready)
 
-Infrastructure manifests are in `infrastructure/gcp/`:
-- `cloud-run/` -- Cloud Run YAML per service
-- `pubsub/topics.yaml` -- Pub/Sub (replaces Kafka on GCP)
-- `cloud-sql/README.md` -- Cloud SQL connection setup
-- `firebase/firebase.json` -- Firebase Hosting for 3 React apps
+Run the deploy script after installing gcloud + Docker Desktop + Firebase CLI:
 
-See `docs/context/ARCHITECTURE.md` for the full GCP deployment diagram.
+```powershell
+.\infrastructure\gcp\deploy.ps1          # Full deploy (~15 min first run)
+.\infrastructure\gcp\deploy.ps1 -SkipBuild     # Re-deploy without rebuild
+.\infrastructure\gcp\deploy.ps1 -OnlyFrontend  # React apps only
+```
+
+**Shareable URLs (after deploy):**
+- https://cc-customer-0315.web.app -- Customer App (PWA, installable on mobile)
+- https://cc-merchant-0315.web.app -- Merchant Portal
+- https://cc-colleague-0315.web.app -- Colleague Portal
+
+**Cost:** ~$9.36/month (Cloud SQL db-f1-micro ~$9.16 + Artifact Registry ~$0.20)
+
+**Architecture:** Firebase Hosting rewrites `/api/**` to BFF on Cloud Run. Java services scale to zero. See `infrastructure/gcp/README.md` for full guide.

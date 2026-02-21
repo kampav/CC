@@ -273,13 +273,62 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 
 ---
 
-## Current State (2026-02-21) -- v1.2.0
+---
+
+## Phase 11: v1.3.0 -- GCP Deployment + PWA (2026-02-21)
+
+### Dockerfiles (all 7 services)
+- Multi-stage builds: `maven:3.9-eclipse-temurin-17-alpine` build → `eclipse-temurin:17-jre-alpine` runtime (~300MB)
+- BFF: `node:20-alpine`, production deps only
+- Files: `services/{offer,partner,eligibility,redemption,customer-data,transaction-data}-service/Dockerfile`, `services/bff/Dockerfile`
+
+### GCP Infrastructure (deploy-ready)
+- `infrastructure/gcp/deploy.ps1` — master PowerShell deploy script
+  - Creates Cloud SQL `cc-postgres` db-f1-micro PostgreSQL 14 (us-central1, ~$9.50/mo)
+  - Builds + pushes Docker images to Artifact Registry (`us-central1-docker.pkg.dev/gen-lang-client-0315293206/cc-services/`)
+  - Deploys 6 Java services to Cloud Run (min-instances=0, scale-to-zero)
+  - Deploys BFF to Cloud Run (min-instances=1, always-on)
+  - Builds 3 React apps + deploys to Firebase Hosting
+  - Flags: `-SkipBuild` (re-deploy only), `-OnlyFrontend` (React apps only)
+- `infrastructure/gcp/README.md` — prerequisites, cost breakdown, troubleshooting
+
+### Kafka Disable for GCP
+- `application-gcp.yml` in customer-data-service and transaction-data-service: `kafka.consumers.enabled: false` + exclude `KafkaAutoConfiguration`
+- `@ConditionalOnProperty(name="kafka.consumers.enabled", ...)` on `CustomerEventConsumer` + `TransactionEventConsumer`
+- `application-gcp.yml` in offer-service: dummy `bootstrap-servers: localhost:9092` (publisher is try-catch, no failure)
+- Activation: `SPRING_PROFILES_ACTIVE=gcp` as Cloud Run env var
+
+### Firebase Hosting
+- `apps/customer-app/firebase.json` — site: `cc-customer-0315`, rewrites `/api/**` to BFF Cloud Run service
+- `apps/merchant-portal/firebase.json` — site: `cc-merchant-0315`
+- `apps/colleague-portal/firebase.json` — site: `cc-colleague-0315`
+- All three `.firebaserc` files link to project `gen-lang-client-0315293206`
+
+### PWA (Customer App)
+- `apps/customer-app/public/manifest.json` — installable app: name, theme_color #0a2342, icons, shortcuts to /browse + /cashback
+- `apps/customer-app/public/sw.js` — service worker: cache-first static, network-first /api/
+- `apps/customer-app/index.html` — PWA meta tags + SW registration
+
+### .gitignore
+- Added `infrastructure/gcp/secrets.json`, `urls.json`, `apps/*/.env.production`
+
+### Commit
+- `5167cf8` — "feat: GCP deployment + PWA support (v1.3.0)" — 24 files, 862 insertions
+
+---
+
+## Current State (2026-02-21) -- v1.3.0
 
 **All services (10):**
 - offer-service (8081), partner-service (8082), eligibility-service (8083), redemption-service (8084)
 - customer-data-service (8085), transaction-data-service (8086)
 - BFF (3000), customer-app (5173), merchant-portal (5174), colleague-portal (5175)
 - Redis (6379), PostgreSQL (5432), Kafka (9092), Kafka UI (9080)
+
+**GCP (v1.3.0 — deploy-ready):**
+- Run `.\infrastructure\gcp\deploy.ps1` after installing gcloud + Docker + Firebase CLI
+- Sites: cc-customer-0315.web.app / cc-merchant-0315.web.app / cc-colleague-0315.web.app
+- Cost: ~$9.36/month (Cloud SQL db-f1-micro dominates)
 
 **Data summary:**
 - 32 offers, 15 partners, 6 campaigns
