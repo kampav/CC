@@ -188,19 +188,60 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 - `services/bff/.env.example` created with all config vars documented
 - Uses axios (already a dependency) — no new npm packages required
 
-## Current State (2026-02-20)
+---
+
+## Phase 9: v1.1.0 — JWT Auth, Revenue Model, AI Insights & Exec Dashboard (2026-02-20)
+
+### Auth
+- New `identity` schema + `identity.users` table (BFF-managed via `pg`, auto-created on startup)
+- JWT login: `POST /api/v1/auth/login` → 8h Bearer token
+- `services/bff/src/routes/auth.js`: login, `/me`, register
+- `services/bff/src/middleware/auth.js`: accepts `Authorization: Bearer <jwt>` OR legacy `X-API-Key`
+- `services/bff/src/db.js`: pg Pool to cc-postgres
+- `services/bff/src/identity.js`: schema init + seed 5 demo users on startup
+- All 3 frontend apps: `src/lib/auth.ts`, `src/pages/Login.tsx`, updated `api/client.ts` (JWT-first), `App.tsx` with `ProtectedRoute` + `/login` route
+- Layout headers updated: show user name + Sign out button
+- Demo users (pw: demo1234): customer@, customer2@, merchant@, colleague@, exec@demo.com
+
+### Revenue Model
+- Tier commission: BRONZE 15% / SILVER 12% / GOLD 10% / PLATINUM 8% of cashback
+- `services/bff/src/routes/commercial.js`: commercial customer KYB CRUD
+- `GET /api/v1/analytics/revenue`: commission breakdown by tier + daily trend (from revenue_ledger)
+- `GET /api/v1/analytics/customer-insights/:id`: AI customer profile summary
+
+### New Flyway Migrations
+- `offer-service V5`: `commission_rate DECIMAL(5,2) DEFAULT 10.00` on offers
+- `partner-service V3`: `tier` column on partners + `commercial_customers` table (5 demo rows)
+- `redemption-service V4`: `revenue_ledger` table, backfilled from existing cashback_credits
+
+### New BFF Routes
+- `GET /api/v1/exec/dashboard`: KPIs, category ROI, merchant tier breakdown, AI narrative
+- `GET /api/v1/recommendations/merchant-next-offer`: AI "what to offer next"
+- `GET/POST/PATCH /api/v1/commercial`: commercial customer KYB workflow
+
+### New Frontend Pages
+- Merchant Portal: `AIOfferSuggestions.tsx`, nav link "AI Suggestions"
+- Colleague Portal: `CommercialOnboarding.tsx`, `CustomerInsights.tsx`, `ExecDashboard.tsx`
+- Colleague Portal: `Analytics.tsx` updated with AI revenue narrative + tier breakdown
+
+### Bug Fixes (post-v1.1.0)
+- `exec.js`: removed TypeScript `(o: any)` annotation from plain JS file (caused Node.js SyntaxError / BFF crash)
+- `analytics.js`: widened role guards to include COLLEAGUE + EXEC (was MERCHANT/ADMIN only)
+- `start.ps1`: BFF now waits for port 3000 to open, prints OK/FAILED with log hint
+
+---
+
+## Current State (2026-02-20) — v1.1.0
 
 **All services:** offer-service (8081), partner-service (8082), eligibility-service (8083), redemption-service (8084), BFF (3000), customer-app (5173), merchant-portal (5174), colleague-portal (5175)
 
-**Synthetic data summary:**
-- 25 LIVE offers across 7 categories (Groceries, Fashion, Dining, Travel, Electronics, Entertainment, Health & Wellness)
-- 14 merchants (12 APPROVED, 2 PENDING)
-- 6 campaigns with offer assignments
-- 7 customer profiles with distinct spending personas
-- 40+ activations, 40+ transactions, 40+ cashback credits
+**Data summary:**
+- 32 offers, 15 partners, 6 campaigns, 7 customer personas, 40+ activations/transactions/cashback credits
+- 5 commercial customers (seeded: 2 APPROVED, 1 KYB_IN_PROGRESS, 2 PENDING)
+- revenue_ledger backfilled from existing cashback_credits (BRONZE tier, 15%)
 
-**AI Personalisation:**
-- Set `GEMINI_API_KEY` in `services/bff/.env` for Gemini-powered recommendations
-- Free tier at https://aistudio.google.com/app/apikey is sufficient for demo
+**Auth:**
+- Login at each portal's `/login` page — JWT stored in localStorage
+- Demo pw: `demo1234` for all users
 
-**See `START.md` in project root for full restart instructions.**
+**Start:** `.\scripts\stop.ps1 ; .\scripts\start.ps1` — BFF prints OK/FAILED on port 3000

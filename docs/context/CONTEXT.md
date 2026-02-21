@@ -81,38 +81,15 @@ docker compose up -d
 docker compose ps   # Should show 3 containers running
 ```
 
-### Step 2: Start Java Services (each in a separate terminal)
+### Step 2: Start all services (single command)
 ```powershell
-cd services\offer-service
-.\mvnw spring-boot:run          # Port 8081
-
-cd services\partner-service
-.\mvnw spring-boot:run          # Port 8082
-
-cd services\eligibility-service
-.\mvnw spring-boot:run          # Port 8083
-
-cd services\redemption-service
-.\mvnw spring-boot:run          # Port 8084
+.\scripts\start.ps1
+# Java services take ~90s to compile. BFF prints OK/FAILED on port 3000.
 ```
 
-### Step 3: Start BFF
+Or use stop/start cycle:
 ```powershell
-cd services\bff
-npm install
-npm start                       # Port 3000
-```
-
-### Step 4: Start Frontends
-```powershell
-cd apps\customer-app
-npm install && npm run dev      # Port 5173
-
-cd apps\merchant-portal
-npm install && npm run dev      # Port 5174
-
-cd apps\colleague-portal
-npm install && npm run dev      # Port 5175
+.\scripts\stop.ps1 ; .\scripts\start.ps1
 ```
 
 ### Verify Everything
@@ -122,9 +99,10 @@ npm install && npm run dev      # Port 5175
 | Offer Service | http://localhost:8081/api/v1/offers/health | `{"status":"UP"}` |
 | Partner Service | http://localhost:8082/api/v1/partners/health | `{"status":"UP"}` |
 | BFF | http://localhost:3000/health | `{"status":"UP"}` |
-| Customer App | http://localhost:5173 | Welcome page with offers |
-| Merchant Portal | http://localhost:5174 | Dashboard with metrics |
-| Colleague Portal | http://localhost:5175 | Admin dashboard |
+| Customer App | http://localhost:5173 | Redirects to /login → customer@demo.com / demo1234 |
+| Merchant Portal | http://localhost:5174 | Redirects to /login → merchant@demo.com / demo1234 |
+| Colleague Portal | http://localhost:5175 | Redirects to /login → colleague@demo.com / demo1234 |
+| Exec Dashboard | http://localhost:5175/exec-dashboard | Login as exec@demo.com / demo1234 |
 
 ---
 
@@ -132,51 +110,44 @@ npm install && npm run dev      # Port 5175
 
 | Service | Status | Port | Key Features |
 |---------|--------|------|-------------|
-| PostgreSQL | RUNNING (Docker) | 5432 | 4 schemas: offers, partners, eligibility, redemptions |
+| PostgreSQL | RUNNING (Docker) | 5432 | 5 schemas: offers, partners, eligibility, redemptions, identity |
 | Kafka | RUNNING (Docker) | 9092 | KRaft mode, offer.events topic |
 | Kafka UI | RUNNING (Docker) | 9080 | Web-based Kafka monitoring |
-| offer-service | **COMPLETE** | 8081 | Offers CRUD, campaigns, audit log, analytics, Kafka events |
-| partner-service | **COMPLETE** | 8082 | Partner CRUD, status lifecycle, audit log |
+| offer-service | **COMPLETE** | 8081 | Offers CRUD, campaigns, audit log, analytics, Kafka events, commission_rate |
+| partner-service | **COMPLETE** | 8082 | Partner CRUD, tier model, commercial_customers KYB |
 | eligibility-service | **COMPLETE** | 8083 | Brand match + fatigue limit checks |
-| redemption-service | **COMPLETE** | 8084 | Activations, transactions, cashback credits, analytics |
-| bff | **COMPLETE** | 3000 | Auth, routing, recommendations engine |
-| customer-app | **COMPLETE** | 5173 | 6 pages: Home, Browse, Detail, My Offers, Cashback, Transactions |
-| merchant-portal | **COMPLETE** | 5174 | 8 pages: Dashboard, Offers, Create, Edit, Detail, Profile, Transactions |
-| colleague-portal | **COMPLETE** | 5175 | 7 pages: Dashboard, Offer Review, Merchants, Campaigns, Analytics, Audit, Compliance |
+| redemption-service | **COMPLETE** | 8084 | Activations, transactions, cashback, revenue_ledger |
+| bff | **COMPLETE** | 3000 | JWT auth, routing, AI recommendations, exec dashboard, commercial KYB |
+| customer-app | **COMPLETE** | 5173 | Login + 6 pages: Home, Browse, Detail, My Offers, Cashback, Transactions |
+| merchant-portal | **COMPLETE** | 5174 | Login + 8 pages: Dashboard, Offers, Create, Edit, Detail, Profile, Transactions, AI Suggestions |
+| colleague-portal | **COMPLETE** | 5175 | Login + 10 pages: Dashboard, Exec Dashboard, Offer Review, Merchant/Commercial Onboarding, Campaigns, Customer Insights, Analytics, Audit, Compliance |
 
 ---
 
 ## CURRENT PROGRESS
 
-**Status:** MVP COMPLETE
-**Progress:** ████████████████████ 100%
+**Version:** v1.1.0 — **Status:** COMPLETE
 
-All core features are implemented:
-- Offer lifecycle management (CRUD + state machine)
-- Partner/merchant management
-- Customer activation and cashback flow
-- Eligibility checking
-- Campaign management
-- Compliance checking (FCA/ASA rules)
-- Audit trail
-- Analytics (offer + redemption metrics)
-- Personalization (rule-based recommendations, Vertex AI scaffold)
-- Three complete portal UIs (customer, merchant, colleague)
-
-**Pending enhancement:** Vertex AI integration for ML-based recommendations (API key needed).
+All features implemented:
+- Offer lifecycle, campaigns, compliance, audit
+- Partner/merchant management with tier model (BRONZE→PLATINUM)
+- Customer cashback flow with bank revenue ledger
+- JWT auth (email/password login, all 3 portals)
+- AI recommendations: personalized feed, merchant next-offer, customer insights
+- Exec dashboard: KPIs, category ROI, merchant tier breakdown, AI narrative
+- Commercial customer KYB onboarding workflow
+- Rule-based fallback when no AI key set
 
 ---
 
 ## DEMO FLOW
 
-1. **Merchant Portal** (http://localhost:5174): Create an offer → Submit for Review → (wait for colleague approval)
-2. **Colleague Portal** (http://localhost:5175): Review offer → Run compliance checks → Approve → Set to LIVE
-3. **Customer App** (http://localhost:5173): Browse offers → Check eligibility → Activate offer
-4. **Customer App**: Simulate a transaction → Cashback automatically credited
-5. **Customer App**: View cashback in "My Cashback" page
-6. **Merchant Portal**: Dashboard shows analytics, category performance, insights
-7. **Colleague Portal**: Audit log shows all changes, campaigns group offers
-8. **Kafka UI** (http://localhost:9080): See offer.events messages
+1. Login at each portal (`/login`) — all pw: `demo1234`
+2. **Merchant** (5174): Create offer → Submit for Review → AI Suggestions tab
+3. **Colleague** (5175): Review/approve offer → Commercial Onboarding → Customer Insights
+4. **Customer** (5173): Browse → Activate → Simulate transaction → View cashback
+5. **Exec Dashboard** (5175/exec-dashboard, login as exec@demo.com): KPIs + AI narrative
+6. **Kafka UI** (9080): See offer.events messages
 
 ---
 
@@ -190,8 +161,10 @@ All core features are implemented:
 | ADR-004 | Frontend build | Vite | Faster than CRA, modern standard |
 | ADR-005 | API docs | SpringDoc (auto-generated) | Always in sync |
 | ADR-006 | State machine | In-code enum with transition map | Self-documenting |
-| ADR-007 | Auth (MVP) | API-key in BFF, role injection | Simpler than JWT for demo |
-| ADR-008 | Recommendations | Rule-based in BFF + Vertex AI scaffold | Works without ML infra |
+| ADR-007 | Auth (v1.1) | JWT Bearer in BFF + pg identity schema | Real login, backward-compat X-API-Key kept |
+| ADR-008 | Recommendations | Rule-based + Gemini/OpenAI/Claude AI | Auto-detects key prefix, graceful fallback |
+| ADR-011 | Revenue model | Tier commission in revenue_ledger | Bank earns % of cashback per transaction |
+| ADR-012 | Identity storage | BFF-managed identity schema via pg | Avoids adding auth to Java services |
 | ADR-009 | Compliance | Client-side checks in colleague portal | Fast iteration, no backend needed |
 | ADR-010 | Analytics | Direct SQL queries via JPA | No Kafka consumer pipeline needed for MVP |
 

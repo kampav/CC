@@ -322,3 +322,82 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 | `apps/colleague-portal/src/pages/AuditLog.tsx` | Audit trail with search |
 | `apps/colleague-portal/src/pages/Compliance.tsx` | Compliance rules reference |
 | `apps/colleague-portal/vite.config.ts` | Dev server :5175, proxies /api to BFF |
+
+---
+
+## Feature: JWT Authentication (v1.1.0)
+
+**Status:** COMPLETE
+**What it does:** Email/password login returning 8h JWT. All 3 portals redirect to /login if not authenticated. Legacy X-API-Key still accepted for backward-compat.
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| DB | `identity.users` (BFF-managed) | Users table with bcrypt password_hash, role, partnerId, customerId |
+| BFF Init | `services/bff/src/db.js` | pg Pool connecting to cc-postgres |
+| BFF Init | `services/bff/src/identity.js` | Creates schema + seeds 5 demo users on BFF startup |
+| BFF Route | `services/bff/src/routes/auth.js` | POST /login → JWT, GET /me, POST /register |
+| BFF Middleware | `services/bff/src/middleware/auth.js` | JWT Bearer OR X-API-Key; `requireRole()` guard |
+| Frontend | `apps/*/src/lib/auth.ts` | `getToken/setToken/clearToken/isLoggedIn/getUser` |
+| Frontend | `apps/*/src/pages/Login.tsx` | Email/password form, posts to /api/v1/auth/login |
+| Frontend | `apps/*/src/api/client.ts` | Sends `Authorization: Bearer <token>`, falls back to demo key |
+| Frontend | `apps/*/src/App.tsx` | `/login` route + `ProtectedRoute` redirects unauthenticated users |
+| Frontend | `apps/*/src/components/Layout.tsx` | User name + Sign out button in header |
+
+Demo users (pw: `demo1234`): customer@, customer2@, merchant@, colleague@, exec@demo.com
+
+---
+
+## Feature: Bank Revenue / Tier Model (v1.1.0)
+
+**Status:** COMPLETE
+**What it does:** Bank earns commission on every cashback credit. Commission rate depends on merchant tier.
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| Migration | `offer-service V5` | `commission_rate DECIMAL(5,2) DEFAULT 10.00` on offers |
+| Migration | `partner-service V3` | `tier` column on partners (BRONZE/SILVER/GOLD/PLATINUM) |
+| Migration | `redemption-service V4` | `revenue_ledger` table + backfill from cashback_credits |
+| BFF Route | `services/bff/src/routes/analytics.js` | `GET /analytics/revenue` — tier breakdown + daily trend |
+
+Tier rates: BRONZE 15% · SILVER 12% · GOLD 10% · PLATINUM 8%
+
+---
+
+## Feature: Exec Dashboard (v1.1.0)
+
+**Status:** COMPLETE
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| BFF Route | `services/bff/src/routes/exec.js` | `GET /exec/dashboard` — KPIs, category ROI, tier breakdown, AI narrative |
+| UI | `apps/colleague-portal/src/pages/ExecDashboard.tsx` | KPI cards, ROI bars, tier stacked bar, AI insight banner |
+
+---
+
+## Feature: Commercial Customer KYB (v1.1.0)
+
+**Status:** COMPLETE
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| Migration | `partner-service V3` | `commercial_customers` table (company, CRN, KYB status) |
+| BFF Route | `services/bff/src/routes/commercial.js` | GET list, POST create, PATCH status |
+| UI | `apps/colleague-portal/src/pages/CommercialOnboarding.tsx` | Filter by status, create, approve/reject |
+
+Statuses: PENDING_ONBOARDING → KYB_IN_PROGRESS → APPROVED / REJECTED
+
+---
+
+## Feature: AI Insights (v1.1.0)
+
+**Status:** COMPLETE
+
+| Endpoint | File | What It Does |
+|----------|------|-------------|
+| `GET /recommendations/merchant-next-offer` | `recommendations.js` | AI suggests 3 new offer ideas based on category coverage + trends |
+| `GET /analytics/customer-insights/:id` | `analytics.js` | AI generates 3-sentence customer profile + campaign suggestion |
+| `GET /exec/dashboard` → `aiInsight` | `exec.js` | AI generates 2-sentence exec narrative from KPI context |
+| UI | `merchant-portal/AIOfferSuggestions.tsx` | "What should I offer next?" with AI suggestions + category stats |
+| UI | `colleague-portal/CustomerInsights.tsx` | Customer search + AI profile + activations breakdown |
+
+AI providers auto-detected by key prefix: `sk-ant-` = Claude · `sk-` = OpenAI · `AIza` = Gemini. Rule-based fallback if no key.
