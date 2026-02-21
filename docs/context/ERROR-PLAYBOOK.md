@@ -9,79 +9,95 @@
 ## JAVA / SPRING BOOT ERRORS
 
 ### "JAVA_HOME is not set"
-**When:** Running `.\mvnw.cmd spring-boot:run`
+**When:** Running `.\mvnw spring-boot:run`
 **Fix (PowerShell):**
 ```powershell
-# Find where Java is installed
-where java
-# Set JAVA_HOME (replace path with your actual Java location)
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.2.13-hotspot"
-# Make it permanent: search "Environment Variables" in Windows Start menu
-# Add JAVA_HOME as a System variable pointing to your Java install folder (WITHOUT \bin)
+# Set JAVA_HOME for current session
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot"
+# Make permanent: System Properties → Environment Variables → New System Variable
+# Name: JAVA_HOME, Value: C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot
 ```
 
 ### "mvnw.cmd is not recognized" or "not a recognized command"
 **When:** First time running Maven wrapper
-**Fix:** The Maven wrapper files need to exist. Run:
-```powershell
-cd services\offer-service
-# If mvnw.cmd doesn't exist, download Maven wrapper:
-mvn -N wrapper:wrapper
-# OR if you don't have mvn installed, download the wrapper manually:
-# Go to https://maven.apache.org/wrapper/ and follow Windows instructions
-```
-**Alternative:** Install Maven globally: https://maven.apache.org/download.cgi → Add to PATH
+**Fix:** Use `.\mvnw` (Unix-style wrapper) not `.\mvnw.cmd`. The scripts/run-java-service.ps1 script handles this automatically.
 
 ### "Connection refused: localhost:5432"
 **When:** Starting a Java service before Docker is running
 **Cause:** PostgreSQL container isn't running
 **Fix:**
 ```powershell
-# Start Docker Desktop first, then:
-cd C:\Users\YourName\connected-commerce
 docker compose up -d
-# Wait 10 seconds, then verify:
 docker exec cc-postgres pg_isready -U commerce
 # Should say "accepting connections"
 # NOW start your Java service
 ```
 
+### "Connection refused: localhost:6379"
+**When:** BFF starts but Redis isn't running (v1.2.0+)
+**Cause:** cc-redis Docker container isn't running
+**Fix:**
+```powershell
+docker compose up -d
+docker logs cc-redis  # should show "Ready to accept connections"
+```
+Note: BFF falls back to uncached mode if Redis is unavailable — services still work.
+
 ### "Flyway migration error" or "relation already exists"
 **When:** Running a service after a database reset
 **Fix:**
 ```powershell
-# Reset the database completely:
 docker compose down -v
 docker compose up -d
-# Wait 15 seconds for Postgres to initialise
-# Then restart your service
+# Wait 15 seconds, then restart your service
 ```
 
-### "Port 8081 already in use"
-**When:** Starting offer-service when it's already running
+### "Flyway checksum mismatch"
+**When:** An existing migration file was edited after it ran
+**Cause:** Someone changed a V1/V2/etc. SQL file that already ran
+**Fix:** NEVER edit existing migration files. Create a new V(n+1)__fix.sql instead.
+```powershell
+# If you must repair:
+docker exec -it cc-postgres psql -U commerce -d connected_commerce
+# UPDATE flyway_schema_history SET checksum = <new_checksum> WHERE script = 'V3__...sql';
+# Better option: drop -v and start fresh
+```
+
+### "Port 808x already in use"
+**When:** Starting a service when it's already running
 **Fix:**
 ```powershell
-# Find what's using the port:
-netstat -ano | findstr :8081
-# Kill the process (replace PID with the number from the last column):
-taskkill /PID <PID> /F
-# Or just close the PowerShell window where the old service is running
+# Find what's using the port (replace 8085 with the port number):
+Get-NetTCPConnection -LocalPort 8085 -State Listen | Select-Object OwningProcess
+Stop-Process -Id <PID> -Force
 ```
 
 ### "Cannot resolve symbol" or "package does not exist"
 **When:** Compilation error in Java
 **Cause:** Missing import or missing dependency in pom.xml
-**Fix:** Ask the AI to give you the COMPLETE file with all imports. Never try to fix imports yourself. The AI should also check pom.xml has the needed dependency.
+**Fix:** Ask AI for the COMPLETE file with all imports. Check pom.xml has the needed dependency.
 
 ### "No qualifying bean of type" or "Could not autowire"
 **When:** Spring Boot fails to start
-**Cause:** A class is missing the `@Service`, `@Repository`, or `@Component` annotation
-**Fix:** Ask the AI for the COMPLETE file. They probably forgot an annotation.
+**Cause:** Missing `@Service`, `@Repository`, or `@Component` annotation
+**Fix:** Ask AI for the COMPLETE file. They probably forgot an annotation.
 
-### "Table 'offers.offers' doesn't exist"
-**When:** First request after starting the service
-**Cause:** Flyway migration didn't run (wrong schema config)
-**Fix:** Check `application.yml` has the correct schema settings. Ask AI for the COMPLETE application.yml.
+### "Table 'customers.profiles' doesn't exist" (v1.2.0)
+**When:** customer-data-service starts but can't find its tables
+**Cause:** `customers` schema wasn't created in PostgreSQL
+**Fix:**
+```powershell
+docker exec -it cc-postgres psql -U commerce -d connected_commerce -c "CREATE SCHEMA IF NOT EXISTS customers; GRANT ALL ON SCHEMA customers TO commerce;"
+# Then restart customer-data-service -- Flyway will create the tables
+```
+
+### "Table 'banking_transactions.transactions' doesn't exist" (v1.2.0)
+**When:** transaction-data-service starts but can't find its tables
+**Fix:**
+```powershell
+docker exec -it cc-postgres psql -U commerce -d connected_commerce -c "CREATE SCHEMA IF NOT EXISTS banking_transactions; GRANT ALL ON SCHEMA banking_transactions TO commerce;"
+# Then restart transaction-data-service
+```
 
 ---
 
@@ -92,26 +108,51 @@ taskkill /PID <PID> /F
 **Cause:** You're not in the right folder (no package.json in current directory)
 **Fix:**
 ```powershell
-# Make sure you're in the right folder:
-cd C:\Users\YourName\connected-commerce\services\bff
-dir package.json
-# Should show the file. If not, you're in the wrong folder.
+cd C:\Projects\CC\extracted\connected-commerce\services\bff
+dir package.json  # Should show the file
 ```
 
 ### "ECONNREFUSED" in BFF
 **When:** BFF can't reach a backend service
-**Cause:** The backend service isn't running
-**Fix:** Start the backend service first, then the BFF.
+**Cause:** The backend service isn't running or still starting up
+**Fix:** Start the backend service first. Java services take ~90s to compile.
 
 ### "MODULE_NOT_FOUND"
 **When:** Starting the BFF
 **Fix:**
 ```powershell
 cd services\bff
-del /s /q node_modules
+Remove-Item -Recurse -Force node_modules
 npm install
-npm run dev
+node src/index.js
 ```
+
+### "spendSummary.forEach is not a function" (v1.2.0)
+**When:** Recommendations endpoint crashes when fetching spending data
+**Cause:** transaction-data-service returns `{ categories: [...] }` not a plain array
+**Fix:** Already fixed in v1.2.0. In recommendations.js, the code extracts `.categories`:
+```javascript
+const spendRaw = spendRes.status === 'fulfilled' ? spendRes.value.data : null;
+const spendSummary = Array.isArray(spendRaw) ? spendRaw : (spendRaw?.categories || []);
+```
+
+### "SyntaxError: Unexpected token ':'" in BFF
+**When:** BFF crashes immediately on start
+**Cause:** TypeScript type annotation in a plain .js file (e.g., `(o: any)`)
+**Fix:** Remove all TypeScript annotations from .js files. Node.js cannot parse them.
+
+### BFF prints "FAILED" after start
+**When:** Running start.ps1 and BFF health check fails
+**Fix:**
+```powershell
+Get-Content C:\Projects\CC\extracted\connected-commerce\logs\bff-err.log -Tail 20
+```
+Common causes: port 3000 in use, .env missing, PostgreSQL not ready.
+
+### "ioredis connection refused" (v1.2.0)
+**When:** BFF logs show Redis connection error
+**Cause:** cc-redis container not running
+**Fix:** `docker compose up -d` — BFF will reconnect automatically.
 
 ---
 
@@ -131,16 +172,21 @@ docker compose up -d
 
 ### "image not found" or "pull access denied"
 **Cause:** Typo in docker-compose.yml or no internet
-**Fix:** Check internet connection. Ask AI for the COMPLETE docker-compose.yml.
+**Fix:** Check internet connection. Run `docker compose pull` first.
 
 ### Container keeps restarting
 **Fix:**
 ```powershell
-# Check what's wrong:
 docker logs cc-postgres
 docker logs cc-kafka
+docker logs cc-redis
 # The error message will tell you what's wrong
 ```
+
+### "level=warning msg='...version is obsolete'"
+**When:** `docker compose up -d` shows a warning
+**Cause:** Cosmetic warning about deprecated `version:` field in docker-compose.yml
+**Fix:** Nothing to fix -- this is a warning not an error. All containers start successfully.
 
 ---
 
@@ -151,7 +197,6 @@ docker logs cc-kafka
 ```powershell
 cd apps\customer-app
 npm install
-npx vite --version
 npm run dev
 ```
 
@@ -163,10 +208,15 @@ npm run dev
 **Fix:**
 ```powershell
 cd apps\customer-app
-del /s /q node_modules
+Remove-Item -Recurse -Force node_modules
 npm install
 npm run dev
 ```
+
+### Personalization mode not switching (v1.2.0)
+**When:** Clicking Rule-Based/AI toggle has no effect
+**Cause:** localStorage value may be stale
+**Fix:** Open browser DevTools → Application → Local Storage → delete `cc_persona_mode` → refresh
 
 ---
 
@@ -174,38 +224,56 @@ npm run dev
 
 ### "not a git repository"
 ```powershell
-cd C:\Users\YourName\connected-commerce
+cd C:\Projects\CC\extracted\connected-commerce
 git init
 git add .
 git commit -m "Initial commit"
 ```
 
+### "refusing to allow force push to protected branch"
+**When:** Trying to force-push to main
+**Fix:** Don't force push to main. Create a branch, push, and open a PR.
+
 ---
 
 ## GENERAL TROUBLESHOOTING
 
-### "Nothing works"
-Try this reset sequence:
+### Service health checks
+```powershell
+# Check all services at once
+curl http://localhost:8081/api/v1/offers/health
+curl http://localhost:8082/api/v1/partners/health
+curl http://localhost:8083/api/v1/eligibility/health
+curl http://localhost:8084/api/v1/redemptions/health
+curl http://localhost:8085/api/v1/customers/health
+curl http://localhost:8086/api/v1/banking-transactions/health
+curl http://localhost:3000/health
+```
+
+### "Nothing works" -- Full Reset Sequence
 ```powershell
 # 1. Stop everything
+.\scripts\stop.ps1
 docker compose down -v
 
-# 2. Restart Docker Desktop (close and reopen it)
+# 2. Restart Docker Desktop (close and reopen)
 
 # 3. Start fresh
-docker compose up -d
+docker compose up -d   # starts PostgreSQL + Kafka + Redis
 
 # 4. Wait 20 seconds
 
-# 5. Verify
+# 5. Verify containers
 docker compose ps
-# All 3 containers should say "running"
+# All containers should say "running" or "healthy"
 
-# 6. Start ONE service at a time and test it
-cd services\offer-service
-.\mvnw.cmd spring-boot:run
-# Wait for "Started OfferServiceApplication"
-# Test: http://localhost:8081/api/v1/offers/health
+# 6. Start services
+.\scripts\start.ps1
+# Wait ~90s for Java services to compile
+# BFF prints OK/FAILED on port 3000
+
+# 7. Test one service
+curl http://localhost:8081/api/v1/offers/health
 ```
 
 ### AI keeps generating errors

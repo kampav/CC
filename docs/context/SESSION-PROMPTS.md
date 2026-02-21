@@ -1,6 +1,8 @@
 # Connected Commerce - Session Prompt Templates
 
 > **WHAT IS THIS?** Copy-paste these prompts when starting a new AI chat. They give the AI all the context it needs to help you without asking repetitive questions.
+>
+> **Version:** v1.2.0
 
 ---
 

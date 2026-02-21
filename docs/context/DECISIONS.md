@@ -19,8 +19,9 @@
 ## ADR-003: One Database, Separate Schemas
 **Date:** 2026-02-14
 **What we chose:** One PostgreSQL database with a separate schema per service
-**Why:** Simpler local setup than running 4 databases. Each service still has its own isolated space.
+**Why:** Simpler local setup than running 6 databases. Each service still has its own isolated space.
 **Trade-off:** Could create bottleneck at extreme scale, but can split later
+**Note (v1.2.0):** Two new schemas added: `customers` (customer-data-service) and `banking_transactions` (transaction-data-service)
 
 ## ADR-004: Vite for React Apps
 **Date:** 2026-02-14
@@ -40,23 +41,25 @@
 **Why:** Self-documenting, impossible to make invalid transitions, easy to understand and modify
 **Trade-off:** State changes require code change + migration (by design)
 
-## ADR-007: API-Key Auth Instead of JWT
-**Date:** 2026-02-17
-**What we chose:** Simple API-key lookup in BFF middleware instead of JWT tokens
-**Why:** Much simpler for MVP demo. Three hardcoded keys (customer, merchant, admin) with role/userId injection. No token refresh, no auth server needed.
-**Trade-off:** Not production-ready — keys are static, no real user management. JWT can be added later without changing backend services (BFF already injects identity headers).
+## ADR-007: API-Key Auth Initially, JWT in v1.1.0
+**Date:** 2026-02-17 (API key) / 2026-02-20 (JWT)
+**What we chose:** Started with simple API-key lookup in BFF middleware, upgraded to JWT Bearer tokens in v1.1.0
+**Why:** API keys worked for MVP. JWT enables proper multi-user auth, role-based personas, and mobile compatibility.
+**Current state:** Both are accepted. JWT is preferred; X-API-Key still works for backward compat.
+**Trade-off:** Legacy X-API-Key means two code paths to maintain. Will remove in v2.0.
 
-## ADR-008: Rule-Based Recommendations with Vertex AI Scaffold
-**Date:** 2026-02-18
-**What we chose:** Implement recommendation engine as rule-based scoring in the BFF, with Vertex AI fallback when API key is provided
-**Why:** Works immediately without ML infrastructure. Scoring considers category affinity, brand affinity, cashback rate, recency, and urgency. Can switch to ML model by just setting environment variables.
-**Trade-off:** Rule-based engine is less sophisticated than ML, but good enough for MVP
+## ADR-008: Rule-Based Recommendations + AI Toggle
+**Date:** 2026-02-18 (v1) / 2026-02-21 (v2)
+**What we chose:** Rule-based scoring engine in BFF as default, AI mode optional via `?mode=ai` param or API key
+**Why:** Works without ML infrastructure. Rule-based v2 (v1.2.0) is segment+lifecycle+spend_pattern aware. AI mode adds natural language reasoning.
+**v1.2.0 enhancement:** A/B comparison endpoint (`/recommendations/compare`) shows both modes side-by-side.
+**Trade-off:** Rule-based is deterministic but less contextual than ML. AI adds latency (~2-4s vs ~50ms).
 
 ## ADR-009: Client-Side Compliance Checks
 **Date:** 2026-02-18
 **What we chose:** Compliance rules (FCA Fair Value, ASA Misleading Claims, etc.) run in the colleague portal frontend
-**Why:** Fast iteration — rules can be updated without backend deployment. BLOCK-severity failures prevent offer approval in the UI.
-**Trade-off:** Not enforced at the API level — a direct API call could bypass checks. For production, should also validate server-side.
+**Why:** Fast iteration -- rules can be updated without backend deployment. BLOCK-severity failures prevent offer approval in the UI.
+**Trade-off:** Not enforced at the API level -- a direct API call could bypass checks. For production, should also validate server-side.
 
 ## ADR-010: Direct SQL for Analytics
 **Date:** 2026-02-17
@@ -75,3 +78,37 @@
 **What we chose:** Inline CSS styles (`style={{...}}`) in React components rather than CSS modules, Tailwind, or styled-components
 **Why:** Zero build configuration, no additional dependencies, all styling visible inline with the JSX. Good for rapid prototyping.
 **Trade-off:** No hover states, media queries, or animations without JS workarounds. For production, should migrate to Tailwind or CSS modules.
+
+## ADR-013: Separate Customer Data and Transaction Data Services (v1.2.0)
+**Date:** 2026-02-21
+**What we chose:** Two dedicated microservices for customer profiles and transaction history, fed from Kafka
+**Why:** Models how a real retail bank works — core banking systems publish events, downstream services maintain local read-models. Decouples personalization from identity. Each service can scale independently.
+**Services:** customer-data-service (port 8085), transaction-data-service (port 8086)
+**Trade-off:** More services to run locally. More complex startup. Justified by realistic banking architecture demo.
+
+## ADR-014: Redis Caching in BFF (v1.2.0)
+**Date:** 2026-02-21
+**What we chose:** Redis via ioredis for BFF-level caching. TTLs: customer profile 300s, offers 60s, spending 900s.
+**Why:** Customer profiles change rarely. Offer catalogue changes infrequently. Caching eliminates 90%+ of upstream calls on repeated requests.
+**Implementation:** `services/bff/src/cache.js` — `cached(key, ttl, fn)` helper.
+**Trade-off:** Redis becomes a dependency — if it's down, BFF falls back to uncached requests (no hard failure).
+
+## ADR-015: Keyset Pagination Over OFFSET (v1.2.0)
+**Date:** 2026-02-21
+**What we chose:** Keyset/cursor-based pagination (`?after=<ISO8601 timestamp>`) in transaction-data-service instead of OFFSET
+**Why:** OFFSET degrades linearly with page number (OFFSET 1000000 scans 1 million rows). Keyset uses index seek — constant time regardless of page number. Essential for 25M customer scale.
+**Implementation:** `BankingTransactionRepository.findByCustomerIdKeyset()` with composite index `(customer_id, transaction_date DESC)`.
+**Trade-off:** Cannot jump to arbitrary page number (only forward paging). Acceptable for mobile scroll patterns.
+
+## ADR-016: Circuit Breaker in BFF (v1.2.0)
+**Date:** 2026-02-21
+**What we chose:** Simple in-process circuit breaker in BFF (`services/bff/src/circuit.js`) — opens after 5 failures in 30s, half-open after 30s.
+**Why:** Prevents cascade failures when upstream services (customer-data-service, transaction-data-service) are slow or down. Personalization degrades gracefully to rule-based-only mode.
+**Trade-off:** In-process circuit breaker resets on BFF restart. For production, use Redis-backed circuit breaker or a service mesh.
+
+## ADR-017: Kafka for Banking Event Simulation (v1.2.0)
+**Date:** 2026-02-21
+**What we chose:** Use Kafka (already in stack) to simulate core banking events. New topics: `banking.customers` (3 partitions) and `banking.transactions` (6 partitions).
+**Why:** Realistic demonstration of event-driven architecture pattern. Shows how bank systems produce events and downstream services consume them.
+**GCP mapping:** Kafka topics map 1:1 to Cloud Pub/Sub topics for GCP deployment.
+**Trade-off:** Consumers are scaffolded but simulation is via seed data — actual event production would require a separate simulator service.

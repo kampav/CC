@@ -6,29 +6,29 @@
 
 ## Phase 0: Project Setup (2026-02-14)
 
-### Step 0.1 — Monorepo Setup
+### Step 0.1 -- Monorepo Setup
 Folder structure for all services, apps, and config files.
 
-### Step 0.2 — Context Files
+### Step 0.2 -- Context Files
 8 documentation files in `docs/context/` for AI context persistence.
 
-### Step 0.3 — Docker Compose
+### Step 0.3 -- Docker Compose
 PostgreSQL 16 + Kafka KRaft + Kafka UI. `docker compose up -d` starts everything.
 Key files: `docker-compose.yml`, `infrastructure/docker/init-db.sql`
 
-### Step 0.4 — Service Skeletons
+### Step 0.4 -- Service Skeletons
 Empty but runnable starters: offer-service (8081), partner-service (8082), eligibility-service (8083), bff (3000), customer-app (5173), merchant-portal (5174).
 
 ---
 
-## Phase 1: Offer Service (2026-02-14 — 2026-02-17)
+## Phase 1: Offer Service (2026-02-14 - 2026-02-17)
 
-### Step 1.1 — Offer Data Model
+### Step 1.1 -- Offer Data Model
 - V1 Flyway migration: `offers` table (21 columns) + `offer_audit_log`
 - JPA entity, enums (OfferStatus, OfferType, Brand, RedemptionType)
 - Repository with custom queries
 
-### Step 1.2 — Offer CRUD API
+### Step 1.2 -- Offer CRUD API
 - Full REST: POST, GET (paginated with filters), PUT, PATCH /status
 - State machine enforcement (OfferStatus.VALID_TRANSITIONS)
 - Audit trail on every status change
@@ -39,13 +39,13 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 
 ## Phase 2: Partner Service + Auth (2026-02-17)
 
-### Batch 1 — Partner Service
+### Batch 1 -- Partner Service
 - V1 migration: `partners` + `partner_audit_log` tables
 - Full CRUD: create, read, update, status transitions
 - Partner status lifecycle: PENDING → APPROVED → SUSPENDED → DEACTIVATED
 - Audit log for status changes
 
-### Batch 2 — BFF Auth
+### Batch 2 -- BFF Auth
 - API-key based auth middleware (`auth.js`)
 - Three keys: customer-demo-key, merchant-demo-key, admin-demo-key
 - Role injection into requests (userId, userRole)
@@ -55,7 +55,7 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 
 ## Phase 3: Merchant Portal + Customer App UI (2026-02-17)
 
-### Batch 3 — Merchant Portal
+### Batch 3 -- Merchant Portal
 - Dashboard with offer metrics
 - OfferList with status badges and filters
 - CreateOffer form (all fields including imageUrl)
@@ -63,17 +63,17 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 - OfferDetail with status transitions
 - Layout with sidebar navigation
 
-### Batch 4 — Redemption Service + Customer App
-**4A — Redemption Service:**
+### Batch 4 -- Redemption Service + Customer App
+**4A -- Redemption Service:**
 - V1 migration: activations, transactions, cashback_credits
 - Activation flow: customer activates offer, uniqueness enforced
 - Transaction simulation: creates transaction + auto-credits cashback
 - Cashback summary endpoint
 
-**4B — BFF Routes:**
+**4B -- BFF Routes:**
 - activations.js, transactions.js proxies
 
-**4C — Customer App:**
+**4C -- Customer App:**
 - Home page with stats
 - OfferFeed with browse/filter
 - OfferDetail with activation
@@ -83,13 +83,13 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 
 ## Phase 4: Kafka + Eligibility (2026-02-17)
 
-### Batch 5 — Kafka Events
+### Batch 5 -- Kafka Events
 - OfferEvent model + OfferEventPublisher
 - Publishes to `offer.events` topic on status changes
 - Fire-and-forget pattern
 
-### Batch 6 — Eligibility Service
-- Stateless service — calls offer-service and redemption-service
+### Batch 6 -- Eligibility Service
+- Stateless service -- calls offer-service and redemption-service
 - Brand match check + activation fatigue limit
 - POST /eligibility/check endpoint
 
@@ -97,7 +97,7 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 
 ## Phase 5: Analytics + Dashboard (2026-02-17)
 
-### Batch 7 — Analytics
+### Batch 7 -- Analytics
 - OfferAnalyticsController: counts by status
 - RedemptionAnalyticsController: activation/transaction/cashback totals
 - BFF analytics proxy routes
@@ -124,8 +124,8 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 ## Phase 7: Bug Fixes + Enhancements (2026-02-18)
 
 ### Critical Bug Fixes
-- Fixed RedemptionAnalyticsController: `totalCashbackPaid` was missing in global summary (added `sumAllCashback()` query)
-- Fixed BFF partners.js: added role guards (was open to any API key)
+- Fixed RedemptionAnalyticsController: `totalCashbackPaid` was missing in global summary
+- Fixed BFF partners.js: added role guards
 - Fixed BFF transactions.js: role-filtered GET (CUSTOMER sees own, MERCHANT/ADMIN see all)
 - Fixed TransactionController: added merchantId param + listAllTransactions fallback
 - Fixed customer TransactionHistory: replaced raw fetch with api client
@@ -152,96 +152,152 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
   - GET /for-you: personalized recommendations (category affinity, brand affinity, cashback rate, recency, urgency)
   - GET /similar/:offerId: similar offers by category/brand/type
   - GET /merchant-insights: category performance, brand distribution, cashback tiers
-- Vertex AI scaffold ready (set VERTEX_API_KEY + VERTEX_ENDPOINT env vars)
-
-### Compilation Fix
-- Fixed CampaignService.java: `Instant` → `OffsetDateTime` for campaign date parsing
+- Vertex AI scaffold ready
 
 ---
 
 ## Phase 8: Database Fixes + Gemini AI + Synthetic Data (2026-02-20)
 
-### DB Fix — V3 Migration Constraint Ordering
-- **Bug**: `V3__rebrand_and_seed_data.sql` ran UPDATE (brand→BRAND_A) before DROP CONSTRAINT, causing constraint violation if any offers existed with old brand values (LLOYDS etc.)
-- **Fix**: Reordered V3 — DROP CONSTRAINT now runs before the UPDATE
-- **Recovery**: If Flyway marked V3 as FAILED, run the repair SQL in `START.md` then restart offer-service
+### DB Fix -- V3 Migration Constraint Ordering
+- Reordered V3 -- DROP CONSTRAINT now runs before the UPDATE
 
 ### New Migrations
-- `offer-service V4__seed_campaigns_and_offers.sql`:
-  - 6 campaigns (Summer Essentials, Dining Rewards, Fashion Forward, Travel, Tech, Health)
-  - 28 campaign-offer links
-  - 8 additional offers (Ocado, Pizza Express, Holland & Barrett, Premier Inn, ASOS, Amazon, NOW TV, Pret)
-- `redemption-service V3__more_demo_data.sql`:
-  - 4 new customer profiles: Alice (dining/travel), Ben (family grocery), Cara (student/entertainment), Dan (tech)
-  - 22 activations, 22 transactions, 22 cashback credits
+- `offer-service V4__seed_campaigns_and_offers.sql`: 6 campaigns, 28 campaign-offer links, 8 additional offers
+- `redemption-service V3__more_demo_data.sql`: 4 new customer profiles (Alice, Ben, Cara, Dan), 22 activations/transactions
 
 ### Gemini AI Personalisation (BFF)
-- Replaced Vertex AI scaffold with Google Gemini 2.0 Flash integration
-- `GET /api/v1/recommendations/for-you` — uses Gemini when `GEMINI_API_KEY` set
-  - Builds customer preference profile from activation history
-  - Sends ranked offer candidates to Gemini with structured prompt
-  - Returns recommendations with personalised `_reason` per offer
-  - Graceful fallback to rule-based engine on error
-- `GET /api/v1/recommendations/explain/:offerId` — NEW endpoint
-  - Gemini generates a 2-sentence personalised explanation for why an offer suits the customer
-  - Fallback to category-matching explanation
-- `services/bff/.env.example` created with all config vars documented
-- Uses axios (already a dependency) — no new npm packages required
+- Replaced Vertex AI scaffold with Google Gemini integration
+- GET /for-you -- uses Gemini when API key set; graceful fallback to rule-based
+- GET /explain/:offerId -- NEW endpoint for personalised offer explanation
+- `services/bff/.env.example` created
 
 ---
 
-## Phase 9: v1.1.0 — JWT Auth, Revenue Model, AI Insights & Exec Dashboard (2026-02-20)
+## Phase 9: v1.1.0 -- JWT Auth, Revenue Model, AI Insights & Exec Dashboard (2026-02-20)
 
 ### Auth
-- New `identity` schema + `identity.users` table (BFF-managed via `pg`, auto-created on startup)
+- New `identity` schema + `identity.users` table (BFF-managed)
 - JWT login: `POST /api/v1/auth/login` → 8h Bearer token
-- `services/bff/src/routes/auth.js`: login, `/me`, register
-- `services/bff/src/middleware/auth.js`: accepts `Authorization: Bearer <jwt>` OR legacy `X-API-Key`
-- `services/bff/src/db.js`: pg Pool to cc-postgres
-- `services/bff/src/identity.js`: schema init + seed 5 demo users on startup
-- All 3 frontend apps: `src/lib/auth.ts`, `src/pages/Login.tsx`, updated `api/client.ts` (JWT-first), `App.tsx` with `ProtectedRoute` + `/login` route
-- Layout headers updated: show user name + Sign out button
-- Demo users (pw: demo1234): customer@, customer2@, merchant@, colleague@, exec@demo.com
+- auth.js: accepts `Authorization: Bearer <jwt>` OR legacy `X-API-Key`
+- identity.js: schema init + seed 5 demo users on startup
+- All 3 frontend apps: Login.tsx, auth.ts, ProtectedRoute, Layout header
 
 ### Revenue Model
 - Tier commission: BRONZE 15% / SILVER 12% / GOLD 10% / PLATINUM 8% of cashback
-- `services/bff/src/routes/commercial.js`: commercial customer KYB CRUD
-- `GET /api/v1/analytics/revenue`: commission breakdown by tier + daily trend (from revenue_ledger)
-- `GET /api/v1/analytics/customer-insights/:id`: AI customer profile summary
-
-### New Flyway Migrations
-- `offer-service V5`: `commission_rate DECIMAL(5,2) DEFAULT 10.00` on offers
-- `partner-service V3`: `tier` column on partners + `commercial_customers` table (5 demo rows)
-- `redemption-service V4`: `revenue_ledger` table, backfilled from existing cashback_credits
+- offer-service V5: commission_rate column
+- partner-service V3: tier column + commercial_customers table
+- redemption-service V4: revenue_ledger table backfilled from cashback_credits
 
 ### New BFF Routes
-- `GET /api/v1/exec/dashboard`: KPIs, category ROI, merchant tier breakdown, AI narrative
-- `GET /api/v1/recommendations/merchant-next-offer`: AI "what to offer next"
-- `GET/POST/PATCH /api/v1/commercial`: commercial customer KYB workflow
+- GET /exec/dashboard: KPIs, category ROI, merchant tier breakdown, AI narrative
+- GET /recommendations/merchant-next-offer: AI offer suggestions
+- GET/POST/PATCH /commercial: commercial customer KYB workflow
 
 ### New Frontend Pages
-- Merchant Portal: `AIOfferSuggestions.tsx`, nav link "AI Suggestions"
-- Colleague Portal: `CommercialOnboarding.tsx`, `CustomerInsights.tsx`, `ExecDashboard.tsx`
-- Colleague Portal: `Analytics.tsx` updated with AI revenue narrative + tier breakdown
-
-### Bug Fixes (post-v1.1.0)
-- `exec.js`: removed TypeScript `(o: any)` annotation from plain JS file (caused Node.js SyntaxError / BFF crash)
-- `analytics.js`: widened role guards to include COLLEAGUE + EXEC (was MERCHANT/ADMIN only)
-- `start.ps1`: BFF now waits for port 3000 to open, prints OK/FAILED with log hint
+- Merchant Portal: AIOfferSuggestions.tsx
+- Colleague Portal: CommercialOnboarding.tsx, CustomerInsights.tsx, ExecDashboard.tsx
 
 ---
 
-## Current State (2026-02-20) — v1.1.0
+## Phase 10: v1.2.0 -- Banking Data Platform, Enterprise Personalization & Scale Architecture (2026-02-21)
 
-**All services:** offer-service (8081), partner-service (8082), eligibility-service (8083), redemption-service (8084), BFF (3000), customer-app (5173), merchant-portal (5174), colleague-portal (5175)
+### Infrastructure
+- Redis added to docker-compose.yml (`cc-redis`, port 6379)
+- New Kafka topics: `banking.customers` (3 partitions), `banking.transactions` (6 partitions)
+- New DB schemas added to init-db.sql: `customers`, `banking_transactions`
+- 10 services total: 6 Java + BFF + 3 React apps
+
+### customer-data-service (NEW, port 8085)
+- Spring Boot 3.2.3, package `com.cc.customer`
+- V1 migration: `customers.profiles` + `customers.classifications` tables
+- V2 migration: 9 demo personas (Alice through Isla) with classification tags
+- REST: GET /api/v1/customers/{id}, /summary, /classifications
+- Kafka consumer: `banking.customers` topic (upserts customer profiles)
+- HikariCP: max 20 connections
+
+### transaction-data-service (NEW, port 8086)
+- Spring Boot 3.2.3, package `com.cc.transaction`
+- V1 migration: `banking_transactions.transactions` + `banking_transactions.spending_summaries`
+- V2 migration: 90-day transaction history (15-30 txns per persona) + pre-computed summaries
+- REST: GET /api/v1/banking-transactions/customer/{id} (keyset pagination), /spending-summary
+- Kafka consumer: `banking.transactions` topic (6 partitions for 25M scale)
+- Keyset pagination: `?after=<ISO8601>` replaces OFFSET
+
+### partner-service V4
+- CRM-grade commercial customer fields: company_type, sic_code, employee_count, annual_revenue_band, relationship_tier, primary_product, kyb_documents
+- 5 demo commercial customers updated with realistic CRM data
+
+### BFF v1.2.0
+- Personalization v2: segment+lifecycle+spend_pattern aware scoring
+  - Category affinity: 0-40 pts (normalised by real spending data)
+  - Spend pattern alignment: 0-20 pts (DEAL_SEEKER→cashback%, EXPERIENCE_SEEKER→offer type)
+  - Segment alignment: 0-15 pts (PREMIER→premium offers)
+  - Lifecycle urgency: AT_RISK +25 pts, NEW +15 pts
+  - Offer urgency: <7 days +10 pts, <30 days +5 pts
+- A/B mode toggle: `?mode=rule-based|ai` or `X-Personalization-Mode` header
+- GET /recommendations/compare: both modes side-by-side
+- GET /customers/:id/profile proxy: customer-data-service (cached 300s)
+- GET /customers/:id/spending proxy: transaction-data-service (cached 900s)
+- Redis caching (ioredis): profile 300s, offers 60s, spending 900s
+- Circuit breaker: 5 failures → OPEN, half-open after 30s
+- Rate limiting: 60/min recommendations, 300/min general
+- Mobile API: GET /mobile/home, GET /mobile/offers, POST /notifications/register
+- Slim middleware: strips heavy fields when User-Agent is CCPlatform-iOS/Android
+
+### Identity -- Extended to 9 customer personas
+- customer@ (Alice) through customer9@ (Isla) -- all pw: demo1234
+- Each maps to matching customer-data-service profile UUID
+
+### Customer App v2
+- PersonalizationContext.tsx: mode state (rule-based/ai) persisted to localStorage
+- PersonalizationToggle.tsx: pill toggle in Layout header
+- Home.tsx: segment-aware hero banner, mode badges on offer cards, _reason on hover
+- PersonalizationDemo.tsx: side-by-side A/B comparison (route: /demo)
+- Login.tsx: 9-persona selector dropdown with segment descriptions
+
+### GCP Infrastructure
+- infrastructure/gcp/cloud-run/: Cloud Run YAML per service
+- infrastructure/gcp/pubsub/topics.yaml: banking.customers, banking.transactions, commerce.offers
+- infrastructure/gcp/cloud-sql/README.md: Cloud SQL setup
+- infrastructure/gcp/firebase/firebase.json: 3 hosting targets
+
+### Documentation
+- docs/context/MOBILE-API.md: mobile endpoint reference (NEW)
+- docs/context/JOURNEY-PLANS.md: 9 persona A/B demo scripts (NEW)
+- docs/context/ARCHITECTURE.md: v1.2.0 full diagram (UPDATED)
+- docs/context/CONTEXT.md: v1.2.0 services + demo flow (UPDATED)
+- All other .md files updated to reflect v1.2.0
+
+### CI
+- .github/workflows/ci.yml: added customer-data-service and transaction-data-service jobs
+
+---
+
+## Current State (2026-02-21) -- v1.2.0
+
+**All services (10):**
+- offer-service (8081), partner-service (8082), eligibility-service (8083), redemption-service (8084)
+- customer-data-service (8085), transaction-data-service (8086)
+- BFF (3000), customer-app (5173), merchant-portal (5174), colleague-portal (5175)
+- Redis (6379), PostgreSQL (5432), Kafka (9092), Kafka UI (9080)
 
 **Data summary:**
-- 32 offers, 15 partners, 6 campaigns, 7 customer personas, 40+ activations/transactions/cashback credits
-- 5 commercial customers (seeded: 2 APPROVED, 1 KYB_IN_PROGRESS, 2 PENDING)
-- revenue_ledger backfilled from existing cashback_credits (BRONZE tier, 15%)
+- 32 offers, 15 partners, 6 campaigns
+- 9 customer personas (Alice through Isla) with full banking profiles + 90-day transaction history
+- 5 commercial customers (V4 CRM fields)
+- revenue_ledger backfilled
 
 **Auth:**
-- Login at each portal's `/login` page — JWT stored in localStorage
-- Demo pw: `demo1234` for all users
+- JWT Bearer tokens (9 customer logins, 1 merchant, 1 colleague, 1 exec)
+- Demo password: `demo1234`
 
-**Start:** `.\scripts\stop.ps1 ; .\scripts\start.ps1` — BFF prints OK/FAILED on port 3000
+**Start:** `.\scripts\stop.ps1 ; docker compose up -d ; .\scripts\start.ps1`
+- Docker compose starts PostgreSQL + Kafka + Redis
+- start.ps1 starts 10 services (background, logs in logs/ folder)
+- BFF prints OK/FAILED on port 3000 after startup (~90s for Java services)
+
+**Key demo flows:**
+- A/B personalization: `http://localhost:5173/demo` (side-by-side)
+- Persona selector: `http://localhost:5173/login` → dropdown
+- Frank (AT_RISK): rule-based surfaces high-value retention offers
+- Alice (PREMIER, EXPERIENCE_SEEKER): travel/dining offers with personalised reasons

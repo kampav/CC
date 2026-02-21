@@ -3,6 +3,8 @@
 > **PURPOSE:** When you want to change a feature, look it up here to find EVERY file that needs updating. This prevents missing files during modifications.
 >
 > **FOR AI:** When asked to change a feature, ALWAYS consult this registry first. Update it after every change.
+>
+> **Version:** v1.2.0
 
 ---
 
@@ -13,122 +15,71 @@
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| Migration | `services/offer-service/src/main/resources/db/migration/V1__create_offers_table.sql` | Creates `offers` + `offer_audit_log` tables |
-| Entity | `services/offer-service/.../model/Offer.java` | JPA entity — one row in the offers table |
+| Migration | `services/offer-service/.../db/migration/V1__create_offers_table.sql` | Creates `offers` + `offer_audit_log` tables |
+| Entity | `services/offer-service/.../model/Offer.java` | JPA entity |
 | Enums | `services/offer-service/.../model/OfferStatus.java` | State machine with valid transitions |
 | | `services/offer-service/.../model/OfferType.java` | CASHBACK, DISCOUNT_CODE, VOUCHER, EXPERIENCE, PRIZE_DRAW |
 | | `services/offer-service/.../model/Brand.java` | LLOYDS, HALIFAX, BOS, SCOTTISH_WIDOWS |
 | | `services/offer-service/.../model/RedemptionType.java` | CARD_LINKED, VOUCHER_CODE, BARCODE, WALLET_PASS |
-| DTOs | `services/offer-service/.../model/CreateOfferRequest.java` | POST body for creating an offer |
-| | `services/offer-service/.../model/UpdateOfferRequest.java` | PUT body for editing |
-| | `services/offer-service/.../model/StatusChangeRequest.java` | PATCH body for status transitions |
-| | `services/offer-service/.../model/OfferResponse.java` | API response (includes validTransitions) |
-| Audit | `services/offer-service/.../model/OfferAuditLog.java` | Tracks every status change |
-| Repos | `services/offer-service/.../repository/OfferRepository.java` | DB queries (by status, merchant, brand, category) |
-| | `services/offer-service/.../repository/OfferAuditLogRepository.java` | Audit log queries |
-| Service | `services/offer-service/.../service/OfferService.java` | Business logic: create, update, status transitions |
+| DTOs | `services/offer-service/.../model/CreateOfferRequest.java` | POST body |
+| | `services/offer-service/.../model/UpdateOfferRequest.java` | PUT body |
+| | `services/offer-service/.../model/StatusChangeRequest.java` | PATCH body |
+| | `services/offer-service/.../model/OfferResponse.java` | API response |
+| Audit | `services/offer-service/.../model/OfferAuditLog.java` | Status change tracking |
+| Repos | `services/offer-service/.../repository/OfferRepository.java` | DB queries |
+| | `services/offer-service/.../repository/OfferAuditLogRepository.java` | Audit queries |
+| Service | `services/offer-service/.../service/OfferService.java` | Business logic |
 | Controller | `services/offer-service/.../controller/OfferController.java` | REST: POST, GET, PUT, PATCH |
-| Analytics | `services/offer-service/.../controller/OfferAnalyticsController.java` | Offer count stats by status |
-| Audit API | `services/offer-service/.../controller/AuditController.java` | GET audit log entries by offer |
-| Kafka | `services/offer-service/.../model/OfferEvent.java` | Event payload for Kafka |
-| | `services/offer-service/.../service/OfferEventPublisher.java` | Publishes events to offer.events topic |
-| Config | `services/offer-service/.../config/CorrelationIdFilter.java` | Correlation ID propagation |
-| | `services/offer-service/.../config/GlobalExceptionHandler.java` | Error response formatting |
-| | `services/offer-service/src/main/resources/application.yml` | DB, port, Kafka config |
-| BFF | `services/bff/src/routes/offers.js` | Proxy: GET, POST, PUT, PATCH to :8081 |
-| Test | `services/offer-service/src/test/.../OfferStatusTest.java` | State machine unit tests |
-
----
-
-## Feature: Offer Lifecycle State Machine
-
-**Status:** COMPLETE
-
-```
-DRAFT → PENDING_REVIEW → APPROVED → LIVE → PAUSED → LIVE (resume)
-                ↓              ↓        ↓       ↓
-             DRAFT          RETIRED  EXPIRED  RETIRED
-                ↓                      ↓
-             RETIRED                RETIRED
-```
-
-| From | Valid Transitions |
-|------|------------------|
-| DRAFT | PENDING_REVIEW, RETIRED |
-| PENDING_REVIEW | APPROVED, DRAFT, RETIRED |
-| APPROVED | LIVE, RETIRED |
-| LIVE | PAUSED, EXPIRED, RETIRED |
-| PAUSED | LIVE, RETIRED |
-| EXPIRED | RETIRED |
-| RETIRED | (terminal) |
-
-Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.java` (`changeStatus()`)
+| Analytics | `services/offer-service/.../controller/OfferAnalyticsController.java` | Stats by status |
+| Audit API | `services/offer-service/.../controller/AuditController.java` | GET audit log |
+| Kafka | `services/offer-service/.../service/OfferEventPublisher.java` | Publishes events |
+| BFF | `services/bff/src/routes/offers.js` | Proxy to :8081 |
+| Test | `services/offer-service/.../OfferStatusTest.java` | State machine unit tests |
 
 ---
 
 ## Feature: Campaign Management
 
 **Status:** COMPLETE
-**What it does:** Colleagues group offers into campaigns with targeting, scheduling, and budgets.
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| Migration | `services/offer-service/.../db/migration/V2__create_campaigns_table.sql` | campaigns + campaign_offers join table |
+| Migration | `services/offer-service/.../db/migration/V2__create_campaigns_table.sql` | campaigns + campaign_offers |
 | Entity | `services/offer-service/.../model/Campaign.java` | JPA entity with ManyToMany offers |
-| Enum | `services/offer-service/.../model/CampaignStatus.java` | DRAFT→SCHEDULED→ACTIVE→PAUSED→COMPLETED→ARCHIVED |
-| DTOs | `services/offer-service/.../model/CreateCampaignRequest.java` | POST body |
-| | `services/offer-service/.../model/CampaignResponse.java` | Response with nested offer summaries |
-| Repo | `services/offer-service/.../repository/CampaignRepository.java` | DB queries by status |
-| Service | `services/offer-service/.../service/CampaignService.java` | CRUD, add/remove offers, status transitions, partial updates |
-| Controller | `services/offer-service/.../controller/CampaignController.java` | REST: GET, POST, PUT, PATCH, offer management |
-| BFF | `services/bff/src/routes/campaigns.js` | Proxy to :8081 with ADMIN role guard |
-| UI | `apps/colleague-portal/src/pages/CampaignManagement.tsx` | Create/edit campaigns, manage offers, status transitions |
-| API Client | `apps/colleague-portal/src/api/client.ts` | `createCampaign`, `updateCampaign`, `removeOfferFromCampaign` |
+| Service | `services/offer-service/.../service/CampaignService.java` | CRUD + status transitions |
+| Controller | `services/offer-service/.../controller/CampaignController.java` | REST |
+| BFF | `services/bff/src/routes/campaigns.js` | Proxy with ADMIN guard |
+| UI | `apps/colleague-portal/src/pages/CampaignManagement.tsx` | Create/edit/manage campaigns |
 
 ---
 
 ## Feature: Partner/Merchant Management
 
-**Status:** COMPLETE
-**What it does:** Merchants register, colleagues approve/reject, merchants manage profiles.
+**Status:** COMPLETE (V4 CRM fields added in v1.2.0)
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| Migration | `services/partner-service/.../db/migration/V1__create_partners_table.sql` | partners + partner_audit_log tables |
+| Migration | `services/partner-service/.../db/migration/V1-V4` | Partners + audit + tier + commercial CRM fields |
 | Entity | `services/partner-service/.../model/Partner.java` | JPA entity |
-| Enum | `services/partner-service/.../model/PartnerStatus.java` | PENDING→APPROVED→SUSPENDED→DEACTIVATED |
-| DTOs | `CreatePartnerRequest.java`, `UpdatePartnerRequest.java`, `StatusChangeRequest.java`, `PartnerResponse.java` |
-| Audit | `services/partner-service/.../model/PartnerAuditLog.java` | Status change tracking |
-| Repos | `PartnerRepository.java`, `PartnerAuditLogRepository.java` |
-| Service | `services/partner-service/.../service/PartnerService.java` | CRUD + status transitions |
-| Controller | `services/partner-service/.../controller/PartnerController.java` | REST: GET, POST, PUT, PATCH |
-| BFF | `services/bff/src/routes/partners.js` | Proxy with role guards (MERCHANT/ADMIN for writes, ADMIN for status) |
+| BFF | `services/bff/src/routes/partners.js` | Proxy with role guards |
 | UI (Merchant) | `apps/merchant-portal/src/pages/PartnerProfile.tsx` | Profile form |
-| UI (Colleague) | `apps/colleague-portal/src/pages/MerchantOnboarding.tsx` | Review and approve merchants |
+| UI (Colleague) | `apps/colleague-portal/src/pages/MerchantOnboarding.tsx` | Review and approve |
 
 ---
 
 ## Feature: Offer Activation & Cashback
 
 **Status:** COMPLETE
-**What it does:** Customer activates an offer, simulates a transaction, cashback is automatically credited.
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| Migration | `services/redemption-service/.../db/migration/V1__create_redemptions_tables.sql` | activations, transactions, cashback_credits tables |
+| Migration | `services/redemption-service/.../db/migration/V1__create_redemptions_tables.sql` | activations, transactions, cashback_credits |
 | Entities | `Activation.java`, `Transaction.java`, `CashbackCredit.java` | JPA entities |
-| Enums | `ActivationStatus.java` (ACTIVE, USED, EXPIRED, CANCELLED), `TransactionStatus.java`, `CashbackStatus.java` |
-| DTOs | `CreateActivationRequest.java`, `SimulateTransactionRequest.java`, `ActivationResponse.java`, `TransactionResponse.java`, `CashbackSummary.java`, `CashbackCreditResponse.java` |
-| Repos | `ActivationRepository.java`, `TransactionRepository.java`, `CashbackCreditRepository.java` |
-| Services | `ActivationService.java` (activate offer, validate uniqueness) |
-| | `TransactionService.java` (simulate transaction, auto-credit cashback) |
-| Controllers | `ActivationController.java` (POST activate, GET list) |
-| | `TransactionController.java` (POST simulate, GET list by customer/merchant/all) |
-| Analytics | `RedemptionAnalyticsController.java` (summary: activations, transactions, cashback totals) |
-| BFF | `services/bff/src/routes/activations.js` | POST activate, GET list |
-| | `services/bff/src/routes/transactions.js` | POST simulate, GET list (role-filtered) |
-| UI (Customer) | `apps/customer-app/src/pages/OfferDetail.tsx` | Activate button with eligibility check |
-| | `apps/customer-app/src/pages/MyOffers.tsx` | Active offers list |
+| Services | `ActivationService.java`, `TransactionService.java` | Business logic |
+| Controllers | `ActivationController.java`, `TransactionController.java`, `RedemptionAnalyticsController.java` | REST |
+| BFF | `services/bff/src/routes/activations.js`, `transactions.js` | Proxies |
+| UI (Customer) | `apps/customer-app/src/pages/OfferDetail.tsx` | Activate button |
+| | `apps/customer-app/src/pages/MyOffers.tsx` | Active offers |
 | | `apps/customer-app/src/pages/MyCashback.tsx` | Cashback summary |
 | | `apps/customer-app/src/pages/TransactionHistory.tsx` | Transaction list |
 
@@ -137,53 +88,133 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 ## Feature: Eligibility Checking
 
 **Status:** COMPLETE
-**What it does:** Before activation, checks if customer is eligible (brand match + fatigue limit).
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| DTOs | `EligibilityRequest.java`, `EligibilityResponse.java` | Request/response shapes |
-| Service | `services/eligibility-service/.../service/EligibilityService.java` | Brand match + activation count check |
+| Service | `services/eligibility-service/.../service/EligibilityService.java` | Brand match + activation count |
 | Controller | `services/eligibility-service/.../controller/EligibilityController.java` | POST /check |
-| BFF | `services/bff/src/routes/eligibility.js` | Proxy to :8083 |
-| UI | `apps/customer-app/src/pages/OfferDetail.tsx` | Shows eligibility warning, disables activate button |
+| BFF | `services/bff/src/routes/eligibility.js` | Proxy |
+| UI | `apps/customer-app/src/pages/OfferDetail.tsx` | Eligibility warning + disabled button |
 
 ---
 
-## Feature: Personalization & Recommendations
+## Feature: Personalization & Recommendations v2 (v1.2.0)
 
-**Status:** COMPLETE (rule-based) / SCAFFOLD (Vertex AI)
-**What it does:** Personalized offer recommendations for customers, similar offers, merchant insights.
+**Status:** COMPLETE (rule-based v2 + AI mode + A/B comparison)
+**What it does:** Segment-aware personalized offer recommendations with side-by-side A/B comparison.
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| BFF Engine | `services/bff/src/routes/recommendations.js` | Rule-based scoring engine + Vertex AI fallback |
-| UI (Customer) | `apps/customer-app/src/pages/Home.tsx` | "Recommended For You" section |
+| BFF Engine | `services/bff/src/routes/recommendations.js` | Rule-based v2 scoring + AI mode + /compare endpoint |
+| BFF Proxy | `services/bff/src/routes/customers.js` | Proxy to customer-data-service + transaction-data-service |
+| BFF Cache | `services/bff/src/cache.js` | Redis caching: profile 300s, offers 60s, spending 900s |
+| UI (Customer) | `apps/customer-app/src/pages/Home.tsx` | Segment-aware home, mode badges, _reason on hover |
+| UI (Customer) | `apps/customer-app/src/pages/PersonalizationDemo.tsx` | A/B side-by-side comparison |
+| UI (Customer) | `apps/customer-app/src/components/PersonalizationToggle.tsx` | Rule/AI pill toggle in header |
+| UI (Customer) | `apps/customer-app/src/context/PersonalizationContext.tsx` | Mode state + localStorage persistence |
 | UI (Merchant) | `apps/merchant-portal/src/pages/Dashboard.tsx` | Category performance, cashback tiers, insights |
-| API Client | `apps/customer-app/src/api/client.ts` | `getRecommendations()`, `getSimilarOffers()` |
-| API Client | `apps/merchant-portal/src/api/client.ts` | `getMerchantInsights()` |
 
-**Scoring factors:** Category affinity (x10), brand affinity (x5), cashback rate, recency boost (10 - age in days), urgency boost (+15 for expiring within 7 days).
+**Rule-based v2 scoring:**
+```
+score = categoryAffinity(0-40)     // normalised by real spending from transaction-data-service
+      + spendPatternAlignment(0-20) // DEAL_SEEKER→cashback%, EXPERIENCE_SEEKER→offer type
+      + segmentAlignment(0-15)      // PREMIER→premium offers, MASS_MARKET→low min_spend
+      + lifecycleUrgency(0-25)      // AT_RISK: +25, NEW: +15
+      + offerUrgency(0-10)          // <7 days: +10, <30 days: +5
+```
+
+**A/B modes:**
+- `?mode=rule-based` (default) — deterministic, ~50ms
+- `?mode=ai` — AI-powered, natural language reasons, ~2-4s
+- `GET /recommendations/compare` — both side-by-side
+
+---
+
+## Feature: Banking Data Platform (v1.2.0)
+
+**Status:** COMPLETE
+**What it does:** Two new microservices model upstream core banking data — customer profiles and transaction history.
+
+### customer-data-service (port 8085)
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| Migration V1 | `services/customer-data-service/.../V1__create_customer_tables.sql` | profiles + classifications tables |
+| Migration V2 | `services/customer-data-service/.../V2__seed_demo_customers.sql` | 9 demo personas with classification tags |
+| Entity | `services/customer-data-service/.../model/CustomerProfile.java` | JPA entity |
+| Entity | `services/customer-data-service/.../model/Classification.java` | Classification tags |
+| Record | `services/customer-data-service/.../model/CustomerSummary.java` | Slim summary for BFF |
+| Repos | `CustomerProfileRepository.java`, `ClassificationRepository.java` | DB queries |
+| Service | `services/customer-data-service/.../service/CustomerProfileService.java` | Business logic |
+| Controller | `services/customer-data-service/.../controller/CustomerController.java` | GET profile/summary/classifications |
+| Controller | `services/customer-data-service/.../controller/CustomerHealthController.java` | Health check |
+| Kafka | `services/customer-data-service/.../kafka/CustomerEventConsumer.java` | banking.customers consumer |
+| Config | `services/customer-data-service/.../config/CorrelationIdFilter.java` | Correlation ID |
+| BFF | `services/bff/src/routes/customers.js` | Proxy routes + caching |
+
+### transaction-data-service (port 8086)
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| Migration V1 | `services/transaction-data-service/.../V1__create_transaction_tables.sql` | transactions + spending_summaries |
+| Migration V2 | `services/transaction-data-service/.../V2__seed_demo_transactions.sql` | 90-day history for 9 personas |
+| Entity | `services/transaction-data-service/.../model/BankingTransaction.java` | JPA entity |
+| Entity | `services/transaction-data-service/.../model/SpendingSummary.java` | Summary aggregate |
+| Record | `services/transaction-data-service/.../model/SpendingCategory.java` | Category roll-up |
+| Repos | `BankingTransactionRepository.java`, `SpendingSummaryRepository.java` | DB queries (keyset) |
+| Service | `services/transaction-data-service/.../service/TransactionDataService.java` | Business logic |
+| Controller | `services/transaction-data-service/.../controller/TransactionDataController.java` | GET transactions/spending |
+| Kafka | `services/transaction-data-service/.../kafka/TransactionEventConsumer.java` | banking.transactions consumer |
+
+---
+
+## Feature: BFF Enterprise Patterns (v1.2.0)
+
+**Status:** COMPLETE
+
+| File | What It Does |
+|------|-------------|
+| `services/bff/src/cache.js` | Redis via ioredis; `cached(key, ttl, fn)` get-or-set helper |
+| `services/bff/src/circuit.js` | Circuit breaker: 5 failures → OPEN, half-open 30s |
+| `services/bff/src/middleware/slim.js` | Strips heavy fields for mobile (CCPlatform User-Agent) |
+| `services/bff/src/routes/mobile.js` | Mobile endpoints: /mobile/home, /mobile/offers, /notifications/register |
+| `services/bff/src/index.js` | Rate limiting: 60/min recommendations, 300/min general |
+
+---
+
+## Feature: Mobile API (v1.2.0)
+
+**Status:** SCAFFOLD (endpoints implemented, push notifications are registration-only)
+
+| File | What It Does |
+|------|-------------|
+| `services/bff/src/routes/mobile.js` | GET /mobile/home, GET /mobile/offers?slim=true, POST /notifications/register |
+| `services/bff/src/middleware/slim.js` | Strips non-essential fields for mobile payload |
+| `docs/context/MOBILE-API.md` | Full mobile API reference (auth, ETag, URL schemes, push) |
+
+---
+
+## Feature: GCP Infrastructure (v1.2.0)
+
+**Status:** SCAFFOLD (files ready, not deployed)
+
+| File | What It Does |
+|------|-------------|
+| `infrastructure/gcp/cloud-run/*.yaml` | Cloud Run manifests per service (min=1, max=100 replicas) |
+| `infrastructure/gcp/pubsub/topics.yaml` | Pub/Sub topics (replaces Kafka on GCP) |
+| `infrastructure/gcp/cloud-sql/README.md` | Cloud SQL connection setup |
+| `infrastructure/gcp/firebase/firebase.json` | Firebase Hosting for 3 React apps |
 
 ---
 
 ## Feature: Compliance & Offer Review
 
 **Status:** COMPLETE
-**What it does:** Colleague reviews offers against FCA/ASA compliance rules before approval.
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| UI | `apps/colleague-portal/src/pages/OfferReview.tsx` | Compliance check engine with 5 rule categories |
-| UI | `apps/colleague-portal/src/pages/Compliance.tsx` | Compliance rules reference |
-
-**Compliance checks (client-side):**
-| Check | Severity | Rule |
-|-------|----------|------|
-| FCA Fair Value | BLOCK | Cashback rate must be ≤30% |
-| FCA Clear Terms | WARN | Terms field should not be empty |
-| ASA Misleading Claims | BLOCK | Title/description scanned for prohibited words (free, guaranteed, risk-free, etc.) |
-| Prohibited Categories | BLOCK | Blocks Gambling, Tobacco, Weapons, Cryptocurrency |
-| Description Quality | INFO | Description should be ≥20 characters |
+| UI | `apps/colleague-portal/src/pages/OfferReview.tsx` | 5-rule compliance engine (BLOCK/WARN/INFO) |
+| UI | `apps/colleague-portal/src/pages/Compliance.tsx` | Rules reference |
 
 ---
 
@@ -194,9 +225,8 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 | Layer | File | What It Does |
 |-------|------|-------------|
 | Backend | `AuditController.java` (offer-service) | GET audit logs by offer ID |
-| BFF | `services/bff/src/routes/audit.js` | Proxy to :8081 |
-| UI | `apps/colleague-portal/src/pages/AuditLog.tsx` | Search/filter by offer ID, user, status; per-offer drill-down |
-| API Client | `apps/colleague-portal/src/api/client.ts` | `getAuditLog()`, `getAuditLogByOffer()` |
+| BFF | `services/bff/src/routes/audit.js` | Proxy |
+| UI | `apps/colleague-portal/src/pages/AuditLog.tsx` | Search/filter + drill-down |
 
 ---
 
@@ -206,10 +236,11 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| Offer Stats | `OfferAnalyticsController.java` | Counts by status (total, draft, live, etc.) |
-| Redemption Stats | `RedemptionAnalyticsController.java` | Activation count, transaction count, total cashback |
-| BFF | `services/bff/src/routes/analytics.js` | Proxies to both services |
-| UI (Merchant) | `apps/merchant-portal/src/pages/Dashboard.tsx` | Offer + redemption metrics, category performance |
+| Offer Stats | `OfferAnalyticsController.java` | Counts by status |
+| Redemption Stats | `RedemptionAnalyticsController.java` | Activation/transaction/cashback totals |
+| Revenue | `services/bff/src/routes/analytics.js` | `GET /analytics/revenue` — tier breakdown + daily trend |
+| Customer AI | `services/bff/src/routes/analytics.js` | `GET /analytics/customer-insights/:id` |
+| UI (Merchant) | `apps/merchant-portal/src/pages/Dashboard.tsx` | Metrics + category performance |
 | UI (Colleague) | `apps/colleague-portal/src/pages/Analytics.tsx` | Platform-wide analytics |
 
 ---
@@ -217,25 +248,34 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 ## Feature: Kafka Events
 
 **Status:** COMPLETE
-**What it does:** Publishes events when offers change status (fire-and-forget).
 
 | Layer | File | What It Does |
 |-------|------|-------------|
-| Event Model | `services/offer-service/.../model/OfferEvent.java` | Event payload |
-| Publisher | `services/offer-service/.../service/OfferEventPublisher.java` | Sends to `offer.events` topic |
-| Integration | `services/offer-service/.../service/OfferService.java` | Calls publisher on status change |
+| Publisher | `services/offer-service/.../service/OfferEventPublisher.java` | offer.events topic |
+| Consumer | `services/customer-data-service/.../kafka/CustomerEventConsumer.java` | banking.customers |
+| Consumer | `services/transaction-data-service/.../kafka/TransactionEventConsumer.java` | banking.transactions (6 partitions) |
+
+Kafka topics:
+- `offer.events` (1 partition) -- offer status changes
+- `banking.customers` (3 partitions) -- customer profile updates
+- `banking.transactions` (6 partitions) -- transaction events (25M scale)
 
 ---
 
 ## Feature: BFF Proxy + Auth Layer
 
-**Status:** COMPLETE
+**Status:** COMPLETE (JWT in v1.1.0, extended 9 personas in v1.2.0)
 
 | File | What It Does |
 |------|-------------|
-| `services/bff/src/index.js` | Express server, middleware stack, route mounting |
-| `services/bff/src/middleware/auth.js` | API key validation, role/userId injection, `requireRole()` guard |
-| `services/bff/src/routes/offers.js` | Offer proxy routes |
+| `services/bff/src/index.js` | Express server, middleware, route mounting, rate limiting |
+| `services/bff/src/middleware/auth.js` | JWT Bearer OR X-API-Key; `requireRole()` guard |
+| `services/bff/src/db.js` | pg Pool to cc-postgres |
+| `services/bff/src/identity.js` | Schema init + seed 12 demo users on startup |
+| `services/bff/src/cache.js` | Redis caching (v1.2.0) |
+| `services/bff/src/circuit.js` | Circuit breaker (v1.2.0) |
+| `services/bff/src/routes/auth.js` | POST /login, GET /me, POST /register |
+| `services/bff/src/routes/offers.js` | Offer proxy |
 | `services/bff/src/routes/partners.js` | Partner proxy with role guards |
 | `services/bff/src/routes/activations.js` | Activation proxy |
 | `services/bff/src/routes/transactions.js` | Transaction proxy (role-filtered) |
@@ -243,7 +283,89 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 | `services/bff/src/routes/analytics.js` | Analytics proxy |
 | `services/bff/src/routes/campaigns.js` | Campaign proxy (ADMIN only) |
 | `services/bff/src/routes/audit.js` | Audit proxy (ADMIN only) |
-| `services/bff/src/routes/recommendations.js` | Recommendation engine (BFF-internal logic) |
+| `services/bff/src/routes/recommendations.js` | Recommendation engine v2 + AI mode |
+| `services/bff/src/routes/customers.js` | Customer profile + spending proxy (v1.2.0) |
+| `services/bff/src/routes/mobile.js` | Mobile API (v1.2.0) |
+| `services/bff/src/routes/exec.js` | Exec dashboard |
+| `services/bff/src/routes/commercial.js` | Commercial KYB |
+
+---
+
+## Feature: JWT Authentication
+
+**Status:** COMPLETE (9 customer personas in v1.2.0)
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| DB | `identity.users` (BFF-managed) | Users with bcrypt password_hash, role, customerId |
+| BFF | `services/bff/src/identity.js` | Creates schema + seeds 12 demo users on startup |
+| BFF | `services/bff/src/routes/auth.js` | POST /login → JWT, GET /me, POST /register |
+| BFF | `services/bff/src/middleware/auth.js` | JWT Bearer OR X-API-Key |
+| Frontend | `apps/*/src/lib/auth.ts` | Token management |
+| Frontend | `apps/*/src/pages/Login.tsx` | Email/password form (customer app has persona dropdown) |
+| Frontend | `apps/*/src/api/client.ts` | Sends Authorization: Bearer |
+| Frontend | `apps/*/src/App.tsx` | ProtectedRoute + /login redirect |
+
+Demo users (pw: `demo1234`):
+- customer@ (Alice), customer2@ (Ben), customer3@ (Cara), customer4@ (Dan)
+- customer5@ (Emma), customer6@ (Frank), customer7@ (Grace), customer8@ (Harry), customer9@ (Isla)
+- merchant@, colleague@, exec@
+
+---
+
+## Feature: Bank Revenue / Tier Model
+
+**Status:** COMPLETE
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| Migration | `offer-service V5` | commission_rate column |
+| Migration | `partner-service V3` | tier column on partners |
+| Migration | `redemption-service V4` | revenue_ledger table + backfill |
+| BFF | `services/bff/src/routes/analytics.js` | GET /analytics/revenue |
+
+Tier rates: BRONZE 15% / SILVER 12% / GOLD 10% / PLATINUM 8%
+
+---
+
+## Feature: Exec Dashboard
+
+**Status:** COMPLETE
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| BFF | `services/bff/src/routes/exec.js` | GET /exec/dashboard -- KPIs, ROI, tier breakdown, AI narrative |
+| UI | `apps/colleague-portal/src/pages/ExecDashboard.tsx` | KPI cards, ROI bars, tier chart, AI insight banner |
+
+---
+
+## Feature: Commercial Customer KYB
+
+**Status:** COMPLETE (V4 CRM fields added in v1.2.0)
+
+| Layer | File | What It Does |
+|-------|------|-------------|
+| Migration | `partner-service V3` | commercial_customers table |
+| Migration | `partner-service V4` | CRM-grade fields (company_type, sic_code, employee_count, etc.) |
+| BFF | `services/bff/src/routes/commercial.js` | GET list, POST create, PATCH status |
+| UI | `apps/colleague-portal/src/pages/CommercialOnboarding.tsx` | Filter/create/approve workflow |
+
+---
+
+## Feature: AI Insights
+
+**Status:** COMPLETE
+
+| Endpoint | File | What It Does |
+|----------|------|-------------|
+| GET /recommendations/merchant-next-offer | `recommendations.js` | AI suggests 3 new offer ideas |
+| GET /analytics/customer-insights/:id | `analytics.js` | AI generates 3-sentence customer profile |
+| GET /exec/dashboard → aiInsight | `exec.js` | AI generates 2-sentence exec narrative |
+| UI | `merchant-portal/AIOfferSuggestions.tsx` | "What should I offer next?" |
+| UI | `colleague-portal/CustomerInsights.tsx` | Customer search + AI profile |
+
+AI providers auto-detected by key prefix: `sk-ant-` = Claude / `sk-` = OpenAI / `AIza` = Gemini. Rule-based fallback if no key.
+Models: `claude-haiku-4-5-20251001` / `gpt-4o-mini` / `gemini-1.5-flash`
 
 ---
 
@@ -253,32 +375,25 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 
 | File | What It Does |
 |------|-------------|
-| `services/offer-service/.../config/CorrelationIdFilter.java` | Reads/generates X-Correlation-Id, puts in MDC |
-| `services/partner-service/.../config/CorrelationIdFilter.java` | Same pattern |
-| `services/eligibility-service/.../config/CorrelationIdFilter.java` | Same pattern |
-| `services/redemption-service/.../config/CorrelationIdFilter.java` | Same pattern |
-| `services/bff/src/index.js` | Middleware generates correlationId, passes to upstream |
+| `services/*/config/CorrelationIdFilter.java` | Reads/generates X-Correlation-Id, puts in MDC |
+| `services/bff/src/index.js` | Generates correlationId, passes to upstream |
 
 ---
 
-## Feature: Customer App
+## Feature: Customer App v2 (v1.2.0)
 
 **Status:** COMPLETE
 
 | File | What It Does |
 |------|-------------|
-| `apps/customer-app/src/App.tsx` | Router with 6 routes |
-| `apps/customer-app/src/main.tsx` | React entry point |
-| `apps/customer-app/src/api/client.ts` | API client (listOffers, getOffer, activateOffer, listActivations, simulateTransaction, listTransactions, getCashbackSummary, checkEligibility, getRecommendations, getSimilarOffers) |
-| `apps/customer-app/src/components/Layout.tsx` | Header + sidebar navigation |
-| `apps/customer-app/src/types/index.ts` | TypeScript interfaces |
-| `apps/customer-app/src/pages/Home.tsx` | Dashboard with stats + recommendations |
-| `apps/customer-app/src/pages/OfferFeed.tsx` | Browse offers with filters + pagination |
-| `apps/customer-app/src/pages/OfferDetail.tsx` | Offer details + eligibility + activate |
-| `apps/customer-app/src/pages/MyOffers.tsx` | Active offers |
-| `apps/customer-app/src/pages/MyCashback.tsx` | Cashback summary |
-| `apps/customer-app/src/pages/TransactionHistory.tsx` | Transaction list |
-| `apps/customer-app/vite.config.ts` | Dev server :5173, proxies /api to BFF |
+| `apps/customer-app/src/App.tsx` | Router with 7 routes (+ /demo) |
+| `apps/customer-app/src/context/PersonalizationContext.tsx` | Mode state provider |
+| `apps/customer-app/src/components/PersonalizationToggle.tsx` | Rule/AI pill toggle |
+| `apps/customer-app/src/components/Layout.tsx` | Header + toggle + nav |
+| `apps/customer-app/src/pages/Home.tsx` | Segment-aware hero, mode badges, _reason |
+| `apps/customer-app/src/pages/PersonalizationDemo.tsx` | A/B side-by-side (/demo route) |
+| `apps/customer-app/src/pages/Login.tsx` | 9-persona selector dropdown |
+| `apps/customer-app/src/api/client.ts` | getRecommendations (with mode param), getCustomerProfile, getSpendingSummary |
 
 ---
 
@@ -288,19 +403,10 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 
 | File | What It Does |
 |------|-------------|
-| `apps/merchant-portal/src/App.tsx` | Router with 8 routes |
-| `apps/merchant-portal/src/main.tsx` | React entry point |
-| `apps/merchant-portal/src/api/client.ts` | API client (offers CRUD, analytics, transactions, insights) |
-| `apps/merchant-portal/src/components/Layout.tsx` | Header + sidebar navigation |
-| `apps/merchant-portal/src/types/index.ts` | TypeScript interfaces |
-| `apps/merchant-portal/src/pages/Dashboard.tsx` | Metrics + insights + category performance |
-| `apps/merchant-portal/src/pages/OfferList.tsx` | Offer list with status filters |
+| `apps/merchant-portal/src/pages/Dashboard.tsx` | Metrics + insights + AI suggestions |
+| `apps/merchant-portal/src/pages/AIOfferSuggestions.tsx` | "What should I offer next?" |
 | `apps/merchant-portal/src/pages/CreateOffer.tsx` | Create offer form |
 | `apps/merchant-portal/src/pages/EditOffer.tsx` | Edit offer form |
-| `apps/merchant-portal/src/pages/OfferDetail.tsx` | Offer detail + status actions + duplicate |
-| `apps/merchant-portal/src/pages/PartnerProfile.tsx` | Merchant profile |
-| `apps/merchant-portal/src/pages/TransactionHistory.tsx` | Transaction list |
-| `apps/merchant-portal/vite.config.ts` | Dev server :5174, proxies /api to BFF |
 
 ---
 
@@ -310,94 +416,10 @@ Key files: `OfferStatus.java`, `Offer.java` (`transitionTo()`), `OfferService.ja
 
 | File | What It Does |
 |------|-------------|
-| `apps/colleague-portal/src/App.tsx` | Router with 7 routes |
-| `apps/colleague-portal/src/main.tsx` | React entry point |
-| `apps/colleague-portal/src/api/client.ts` | API client (offers, partners, campaigns, audit, analytics) |
-| `apps/colleague-portal/src/components/Layout.tsx` | Header + sidebar navigation |
-| `apps/colleague-portal/src/pages/Dashboard.tsx` | Platform overview stats |
-| `apps/colleague-portal/src/pages/OfferReview.tsx` | Compliance checks + approve/reject |
-| `apps/colleague-portal/src/pages/MerchantOnboarding.tsx` | Merchant approval workflow |
-| `apps/colleague-portal/src/pages/CampaignManagement.tsx` | Campaign CRUD + offer management |
-| `apps/colleague-portal/src/pages/Analytics.tsx` | Platform analytics |
-| `apps/colleague-portal/src/pages/AuditLog.tsx` | Audit trail with search |
-| `apps/colleague-portal/src/pages/Compliance.tsx` | Compliance rules reference |
-| `apps/colleague-portal/vite.config.ts` | Dev server :5175, proxies /api to BFF |
-
----
-
-## Feature: JWT Authentication (v1.1.0)
-
-**Status:** COMPLETE
-**What it does:** Email/password login returning 8h JWT. All 3 portals redirect to /login if not authenticated. Legacy X-API-Key still accepted for backward-compat.
-
-| Layer | File | What It Does |
-|-------|------|-------------|
-| DB | `identity.users` (BFF-managed) | Users table with bcrypt password_hash, role, partnerId, customerId |
-| BFF Init | `services/bff/src/db.js` | pg Pool connecting to cc-postgres |
-| BFF Init | `services/bff/src/identity.js` | Creates schema + seeds 5 demo users on BFF startup |
-| BFF Route | `services/bff/src/routes/auth.js` | POST /login → JWT, GET /me, POST /register |
-| BFF Middleware | `services/bff/src/middleware/auth.js` | JWT Bearer OR X-API-Key; `requireRole()` guard |
-| Frontend | `apps/*/src/lib/auth.ts` | `getToken/setToken/clearToken/isLoggedIn/getUser` |
-| Frontend | `apps/*/src/pages/Login.tsx` | Email/password form, posts to /api/v1/auth/login |
-| Frontend | `apps/*/src/api/client.ts` | Sends `Authorization: Bearer <token>`, falls back to demo key |
-| Frontend | `apps/*/src/App.tsx` | `/login` route + `ProtectedRoute` redirects unauthenticated users |
-| Frontend | `apps/*/src/components/Layout.tsx` | User name + Sign out button in header |
-
-Demo users (pw: `demo1234`): customer@, customer2@, merchant@, colleague@, exec@demo.com
-
----
-
-## Feature: Bank Revenue / Tier Model (v1.1.0)
-
-**Status:** COMPLETE
-**What it does:** Bank earns commission on every cashback credit. Commission rate depends on merchant tier.
-
-| Layer | File | What It Does |
-|-------|------|-------------|
-| Migration | `offer-service V5` | `commission_rate DECIMAL(5,2) DEFAULT 10.00` on offers |
-| Migration | `partner-service V3` | `tier` column on partners (BRONZE/SILVER/GOLD/PLATINUM) |
-| Migration | `redemption-service V4` | `revenue_ledger` table + backfill from cashback_credits |
-| BFF Route | `services/bff/src/routes/analytics.js` | `GET /analytics/revenue` — tier breakdown + daily trend |
-
-Tier rates: BRONZE 15% · SILVER 12% · GOLD 10% · PLATINUM 8%
-
----
-
-## Feature: Exec Dashboard (v1.1.0)
-
-**Status:** COMPLETE
-
-| Layer | File | What It Does |
-|-------|------|-------------|
-| BFF Route | `services/bff/src/routes/exec.js` | `GET /exec/dashboard` — KPIs, category ROI, tier breakdown, AI narrative |
-| UI | `apps/colleague-portal/src/pages/ExecDashboard.tsx` | KPI cards, ROI bars, tier stacked bar, AI insight banner |
-
----
-
-## Feature: Commercial Customer KYB (v1.1.0)
-
-**Status:** COMPLETE
-
-| Layer | File | What It Does |
-|-------|------|-------------|
-| Migration | `partner-service V3` | `commercial_customers` table (company, CRN, KYB status) |
-| BFF Route | `services/bff/src/routes/commercial.js` | GET list, POST create, PATCH status |
-| UI | `apps/colleague-portal/src/pages/CommercialOnboarding.tsx` | Filter by status, create, approve/reject |
-
-Statuses: PENDING_ONBOARDING → KYB_IN_PROGRESS → APPROVED / REJECTED
-
----
-
-## Feature: AI Insights (v1.1.0)
-
-**Status:** COMPLETE
-
-| Endpoint | File | What It Does |
-|----------|------|-------------|
-| `GET /recommendations/merchant-next-offer` | `recommendations.js` | AI suggests 3 new offer ideas based on category coverage + trends |
-| `GET /analytics/customer-insights/:id` | `analytics.js` | AI generates 3-sentence customer profile + campaign suggestion |
-| `GET /exec/dashboard` → `aiInsight` | `exec.js` | AI generates 2-sentence exec narrative from KPI context |
-| UI | `merchant-portal/AIOfferSuggestions.tsx` | "What should I offer next?" with AI suggestions + category stats |
-| UI | `colleague-portal/CustomerInsights.tsx` | Customer search + AI profile + activations breakdown |
-
-AI providers auto-detected by key prefix: `sk-ant-` = Claude · `sk-` = OpenAI · `AIza` = Gemini. Rule-based fallback if no key.
+| `apps/colleague-portal/src/pages/Dashboard.tsx` | Platform overview |
+| `apps/colleague-portal/src/pages/OfferReview.tsx` | Compliance + approve/reject |
+| `apps/colleague-portal/src/pages/ExecDashboard.tsx` | KPIs + AI narrative |
+| `apps/colleague-portal/src/pages/CommercialOnboarding.tsx` | KYB workflow |
+| `apps/colleague-portal/src/pages/CustomerInsights.tsx` | AI customer profile |
+| `apps/colleague-portal/src/pages/CampaignManagement.tsx` | Campaign CRUD |
+| `apps/colleague-portal/src/pages/AuditLog.tsx` | Audit trail |
