@@ -1,0 +1,28 @@
+{
+  "hosting": [
+    {
+      "target": "customer-app",
+      "public": "apps/customer-app/dist",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }],
+      "headers": [
+        {
+          "source": "**/*.@(js|css)",
+          "headers": [{ "key": "Cache-Control", "value": "max-age=31536000" }]
+        }
+      ]
+    },
+    {
+      "target": "merchant-portal",
+      "public": "apps/merchant-portal/dist",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    },
+    {
+      "target": "colleague-portal",
+      "public": "apps/colleague-portal/dist",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    }
+  ]
+}

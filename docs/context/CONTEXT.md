@@ -40,7 +40,9 @@ connected-commerce/
 │   ├── partner-service/            # Java — merchant registration (port 8082)
 │   ├── eligibility-service/        # Java — eligibility checks (port 8083)
 │   ├── redemption-service/         # Java — activations, transactions, cashback (port 8084)
-│   └── bff/                        # Node.js — API gateway, auth, recommendations (port 3000)
+│   ├── customer-data-service/      # Java — bank profiles, classifications (port 8085) NEW v1.2
+│   ├── transaction-data-service/   # Java — MCC transactions, spending summaries (port 8086) NEW v1.2
+│   └── bff/                        # Node.js — API gateway, auth, A/B recommendations, mobile API (port 3000)
 │
 ├── apps/
 │   ├── customer-app/               # React — customer-facing UI (port 5173)
@@ -110,15 +112,18 @@ Or use stop/start cycle:
 
 | Service | Status | Port | Key Features |
 |---------|--------|------|-------------|
-| PostgreSQL | RUNNING (Docker) | 5432 | 5 schemas: offers, partners, eligibility, redemptions, identity |
-| Kafka | RUNNING (Docker) | 9092 | KRaft mode, offer.events topic |
+| PostgreSQL | RUNNING (Docker) | 5432 | 7 schemas: offers, partners, eligibility, redemptions, identity, customers, banking_transactions |
+| Redis | RUNNING (Docker) | 6379 | BFF caching — profile 5min, offers 1min, spending 15min |
+| Kafka | RUNNING (Docker) | 9092 | KRaft mode, 3 topics: commerce.offers, banking.customers, banking.transactions |
 | Kafka UI | RUNNING (Docker) | 9080 | Web-based Kafka monitoring |
 | offer-service | **COMPLETE** | 8081 | Offers CRUD, campaigns, audit log, analytics, Kafka events, commission_rate |
-| partner-service | **COMPLETE** | 8082 | Partner CRUD, tier model, commercial_customers KYB |
+| partner-service | **COMPLETE** | 8082 | Partner CRUD, tier model, commercial_customers KYB + CRM enrichment (V4) |
 | eligibility-service | **COMPLETE** | 8083 | Brand match + fatigue limit checks |
 | redemption-service | **COMPLETE** | 8084 | Activations, transactions, cashback, revenue_ledger |
-| bff | **COMPLETE** | 3000 | JWT auth, routing, AI recommendations, exec dashboard, commercial KYB |
-| customer-app | **COMPLETE** | 5173 | Login + 6 pages: Home, Browse, Detail, My Offers, Cashback, Transactions |
+| **customer-data-service** | **COMPLETE v1.2** | 8085 | Bank-style profiles, lifecycle/segment/spend_pattern, classifications, Kafka consumer |
+| **transaction-data-service** | **COMPLETE v1.2** | 8086 | MCC-enriched transactions, keyset pagination, spending summaries, Kafka consumer |
+| bff | **COMPLETE v1.2** | 3000 | JWT auth, A/B recommendations (rule-based v2 + AI), Redis cache, circuit breaker, mobile API |
+| customer-app | **COMPLETE v1.2** | 5173 | 9 personas, A/B toggle, /demo page, segment-aware home, mode badges |
 | merchant-portal | **COMPLETE** | 5174 | Login + 8 pages: Dashboard, Offers, Create, Edit, Detail, Profile, Transactions, AI Suggestions |
 | colleague-portal | **COMPLETE** | 5175 | Login + 10 pages: Dashboard, Exec Dashboard, Offer Review, Merchant/Commercial Onboarding, Campaigns, Customer Insights, Analytics, Audit, Compliance |
 
@@ -126,9 +131,9 @@ Or use stop/start cycle:
 
 ## CURRENT PROGRESS
 
-**Version:** v1.1.0 — **Status:** COMPLETE
+**Version:** v1.2.0 — **Status:** COMPLETE
 
-All features implemented:
+**v1.1.0 features:**
 - Offer lifecycle, campaigns, compliance, audit
 - Partner/merchant management with tier model (BRONZE→PLATINUM)
 - Customer cashback flow with bank revenue ledger
@@ -138,15 +143,45 @@ All features implemented:
 - Commercial customer KYB onboarding workflow
 - Rule-based fallback when no AI key set
 
+**v1.2.0 additions:**
+- 2 new Java microservices (customer-data-service 8085, transaction-data-service 8086)
+- Bank-style customer profiles: segment, lifecycle, spend_pattern, income_band, classifications
+- 90-day MCC-enriched transaction history, keyset pagination, spending summaries
+- Kafka topics: banking.customers (3 partitions), banking.transactions (6 partitions)
+- Redis caching in BFF (ioredis): profile 5min, offers 1min, spending 15min
+- BFF circuit breaker (5 failures → OPEN) and rate limiting
+- A/B personalization: rule-based v2 scoring (segment/lifecycle/spend-pattern) vs AI
+- `/api/v1/recommendations/compare` endpoint — both modes side-by-side
+- 9 distinct customer demo personas (customer@…customer9@demo.com, all pw: demo1234)
+- Customer App: A/B toggle, /demo page, segment-aware hero, mode badges on cards
+- Mobile API layer: slim endpoints, push notification scaffold
+- GCP infrastructure manifests: Cloud Run, Cloud SQL, Pub/Sub, Firebase
+- partner-service V4: CRM-grade commercial customer fields
+
 ---
 
 ## DEMO FLOW
 
+**Quick start:**
 1. Login at each portal (`/login`) — all pw: `demo1234`
 2. **Merchant** (5174): Create offer → Submit for Review → AI Suggestions tab
 3. **Colleague** (5175): Review/approve offer → Commercial Onboarding → Customer Insights
 4. **Customer** (5173): Browse → Activate → Simulate transaction → View cashback
 5. **Exec Dashboard** (5175/exec-dashboard, login as exec@demo.com): KPIs + AI narrative
+
+**v1.2.0 A/B Demo:**
+6. Customer App (5173): Use persona selector on login → choose Frank (AT_RISK) → observe high-cashback retention offers
+7. Toggle [Rule-Based | AI] in header → compare offer rankings and reasoning
+8. Navigate to `/demo` → side-by-side comparison of both modes
+9. Switch persona to Alice (PREMIER) → observe travel/dining dominance vs Frank
+
+**Verify new services (after ~90s):**
+```powershell
+curl http://localhost:8085/api/v1/customers/health
+curl http://localhost:8086/api/v1/banking-transactions/health
+```
+
+See `docs/context/JOURNEY-PLANS.md` for all 9 persona journey scripts.
 6. **Kafka UI** (9080): See offer.events messages
 
 ---

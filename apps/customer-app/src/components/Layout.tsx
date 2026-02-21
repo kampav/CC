@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getUser, clearToken } from '../lib/auth';
+import PersonalizationToggle from './PersonalizationToggle';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Home', icon: '\u2302' },
@@ -8,6 +9,7 @@ const NAV_ITEMS = [
   { path: '/my-offers', label: 'My Offers', icon: '\u2605' },
   { path: '/cashback', label: 'My Cashback', icon: '\uD83D\uDCB0' },
   { path: '/transactions', label: 'Transactions', icon: '\uD83D\uDCCB' },
+  { path: '/demo', label: 'A/B Demo', icon: '\uD83E\uDDE0' },
 ];
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -45,6 +47,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <PersonalizationToggle />
           <div style={{ padding: '0.4rem 1rem', borderRadius: '20px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', fontSize: '0.8rem', color: '#E0E7FF' }}>
             {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Customer'}
           </div>
@@ -102,7 +105,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         color: '#94A3B8', fontSize: '0.75rem',
         borderTop: '1px solid #E2E8F0', marginTop: '2rem',
       }}>
-        Connected Commerce Platform &mdash; Demo Environment
+        Connected Commerce Platform v1.2.0 &mdash; Demo Environment
       </footer>
     </div>
   );

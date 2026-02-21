@@ -53,6 +53,36 @@ jobs:
           cache: maven
       - run: ./mvnw test -B --no-transfer-progress
 
+  customer-data-service:
+    name: Customer Data Service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/customer-data-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+      - run: ./mvnw test -B --no-transfer-progress -Dspring.flyway.enabled=false -Dspring.jpa.hibernate.ddl-auto=create-drop
+
+  transaction-data-service:
+    name: Transaction Data Service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/transaction-data-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+      - run: ./mvnw test -B --no-transfer-progress -Dspring.flyway.enabled=false -Dspring.jpa.hibernate.ddl-auto=create-drop
+
   frontend:
     name: Frontend (build check)
     runs-on: ubuntu-latest

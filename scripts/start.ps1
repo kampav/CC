@@ -1,4 +1,4 @@
-# Connected Commerce Platform — Start All Services
+# Connected Commerce Platform -- Start All Services
 # Run from the repo root: .\scripts\start.ps1
 param([string]$LogsDir = "$PSScriptRoot\..\logs")
 
@@ -21,7 +21,7 @@ function Start-JavaBg($name, $port, $dir) {
     $proc = Start-Process powershell `
         -ArgumentList @("-ExecutionPolicy","Bypass","-File",$runner,"-UnixDir",$unixDir,"-Log",$log) `
         -WindowStyle Hidden -PassThru
-    Write-Host ("  {0,-25} http://localhost:{1}  [PID {2}]" -f $name, $port, $proc.Id) -ForegroundColor Yellow
+    Write-Host ("  {0,-30} http://localhost:{1}  [PID {2}]" -f $name, $port, $proc.Id) -ForegroundColor Yellow
 }
 
 function Start-NodeBg($name, $port, $dir) {
@@ -40,9 +40,9 @@ function Start-NodeBg($name, $port, $dir) {
         }
     }
     if ($ok) {
-        Write-Host ("  {0,-25} http://localhost:{1}  [PID {2}] OK" -f $name, $port, $proc.Id) -ForegroundColor Green
+        Write-Host ("  {0,-30} http://localhost:{1}  [PID {2}] OK" -f $name, $port, $proc.Id) -ForegroundColor Green
     } else {
-        Write-Host ("  {0,-25} FAILED — check logs\{1}-err.log" -f $name, $name) -ForegroundColor Red
+        Write-Host ("  {0,-30} FAILED -- check logs\{1}-err.log" -f $name, $name) -ForegroundColor Red
     }
 }
 
@@ -52,18 +52,20 @@ function Start-ViteBg($name, $port, $dir) {
         -RedirectStandardOutput "$logsDir\$name.log" `
         -RedirectStandardError  "$logsDir\$name-err.log" `
         -NoNewWindow -PassThru
-    Write-Host ("  {0,-25} http://localhost:{1}  [PID {2}]" -f $name, $port, $proc.Id) -ForegroundColor Yellow
+    Write-Host ("  {0,-30} http://localhost:{1}  [PID {2}]" -f $name, $port, $proc.Id) -ForegroundColor Yellow
 }
 
 Write-Host ""
-Write-Host "Connected Commerce Platform v1.1.0" -ForegroundColor Cyan
-Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "Connected Commerce Platform v1.2.0" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Java microservices (wait ~90s to compile):" -ForegroundColor White
-Start-JavaBg "offer-service"       8081 "$root\services\offer-service"
-Start-JavaBg "partner-service"     8082 "$root\services\partner-service"
-Start-JavaBg "eligibility-service" 8083 "$root\services\eligibility-service"
-Start-JavaBg "redemption-service"  8084 "$root\services\redemption-service"
+Start-JavaBg "offer-service"            8081 "$root\services\offer-service"
+Start-JavaBg "partner-service"          8082 "$root\services\partner-service"
+Start-JavaBg "eligibility-service"      8083 "$root\services\eligibility-service"
+Start-JavaBg "redemption-service"       8084 "$root\services\redemption-service"
+Start-JavaBg "customer-data-service"    8085 "$root\services\customer-data-service"
+Start-JavaBg "transaction-data-service" 8086 "$root\services\transaction-data-service"
 
 Write-Host ""
 Write-Host "BFF (Node.js):" -ForegroundColor White
@@ -78,11 +80,16 @@ Start-ViteBg "colleague-portal"  5175 "$root\apps\colleague-portal"
 Write-Host ""
 Write-Host "All services launched." -ForegroundColor Green
 Write-Host ""
-Write-Host "  http://localhost:5173   Customer App    (customer@demo.com / demo1234)"
-Write-Host "  http://localhost:5174   Merchant Portal (merchant@demo.com / demo1234)"
-Write-Host "  http://localhost:5175   Colleague Portal (colleague@demo.com / demo1234)"
-Write-Host "  http://localhost:5175   Exec Dashboard   (exec@demo.com / demo1234)"
-Write-Host "  http://localhost:3000/demo   AI Demo (no login)"
+Write-Host "  http://localhost:5173   Customer App (9 personas, all pw: demo1234)" -ForegroundColor White
+Write-Host "  http://localhost:5173/demo  A/B Personalisation Demo" -ForegroundColor White
+Write-Host "  http://localhost:5174   Merchant Portal (merchant@demo.com)" -ForegroundColor White
+Write-Host "  http://localhost:5175   Colleague Portal (colleague@demo.com)" -ForegroundColor White
+Write-Host "  http://localhost:5175   Exec Dashboard   (exec@demo.com)" -ForegroundColor White
+Write-Host "  http://localhost:3000/demo  BFF Demo (no login)" -ForegroundColor White
+Write-Host ""
+Write-Host "Health checks (after ~90s):" -ForegroundColor DarkGray
+Write-Host "  curl http://localhost:8085/api/v1/customers/health" -ForegroundColor DarkGray
+Write-Host "  curl http://localhost:8086/api/v1/banking-transactions/health" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "Logs: $logsDir" -ForegroundColor DarkGray
 Write-Host "Stop: .\scripts\stop.ps1" -ForegroundColor DarkGray

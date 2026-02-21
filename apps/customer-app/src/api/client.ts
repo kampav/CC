@@ -87,9 +87,23 @@ export const api = {
       body: JSON.stringify({ customerId: getCustomerId(), offerId }),
     }),
 
-  // Recommendations
-  getRecommendations: (limit = 6) =>
-    request<any>(`/recommendations/for-you?limit=${limit}`),
+  // Recommendations (v2 — with mode support)
+  getRecommendations: (limit = 6, mode: 'rule-based' | 'ai' = 'rule-based') =>
+    request<any>(`/recommendations/for-you?limit=${limit}&mode=${mode}`),
+  compareRecommendations: (limit = 6) =>
+    request<any>(`/recommendations/compare?limit=${limit}`),
   getSimilarOffers: (offerId: string) =>
     request<any>(`/recommendations/similar/${offerId}`),
+
+  // Customer profile (v1.2.0)
+  getCustomerProfile: (id: string) =>
+    request<any>(`/customers/${id}/profile`),
+  getCustomerSummary: (id: string) =>
+    request<any>(`/customers/${id}/summary`),
+  getCustomerSpending: (id: string, months = 3) =>
+    request<any>(`/customers/${id}/spending?months=${months}`),
+
+  // Mobile home (slim)
+  getMobileHome: () =>
+    request<any>('/mobile/home'),
 };

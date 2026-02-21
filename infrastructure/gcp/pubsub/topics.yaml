@@ -1,0 +1,50 @@
+# Connected Commerce — Cloud Pub/Sub Topic Definitions
+# Replaces Kafka topics in GCP environment
+# Each topic maps to a Kafka topic in local dev.
+#
+# Kafka → Pub/Sub mapping:
+#   commerce.offers          → cc-commerce-offers
+#   banking.customers        → cc-banking-customers
+#   banking.transactions     → cc-banking-transactions
+#
+# Key design decisions:
+#   - banking-customers uses message ordering (customer_id as ordering key)
+#   - banking-transactions uses message ordering (customer_id % 6 → 6 subscriptions)
+#   - All topics have 7-day retention for replay/debugging
+
+topics:
+  - name: cc-commerce-offers
+    description: "Offer lifecycle events from offer-service"
+    messageRetentionDuration: 604800s  # 7 days
+    messageStoragePolicy:
+      allowedPersistenceRegions:
+        - europe-west2  # London
+
+  - name: cc-banking-customers
+    description: "Customer profile events from core banking (upstream)"
+    messageRetentionDuration: 604800s
+    enableMessageOrdering: true
+    # Ordering key = customer_id (consistent consumer routing)
+
+  - name: cc-banking-transactions
+    description: "Transaction events from core banking (upstream)"
+    messageRetentionDuration: 604800s
+    enableMessageOrdering: true
+    # Ordering key = customer_id — equivalent to Kafka partition key
+
+subscriptions:
+  - name: cc-customer-data-service-sub
+    topic: cc-banking-customers
+    enableMessageOrdering: true
+    ackDeadlineSeconds: 60
+    retryPolicy:
+      minimumBackoff: 10s
+      maximumBackoff: 600s
+
+  - name: cc-transaction-data-service-sub
+    topic: cc-banking-transactions
+    enableMessageOrdering: true
+    ackDeadlineSeconds: 60
+    retryPolicy:
+      minimumBackoff: 10s
+      maximumBackoff: 600s

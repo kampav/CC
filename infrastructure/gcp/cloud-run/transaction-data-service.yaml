@@ -1,0 +1,32 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: cc-transaction-data-service
+  annotations:
+    run.googleapis.com/ingress: internal
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "100"
+    spec:
+      containerConcurrency: 80
+      containers:
+        - image: gcr.io/PROJECT_ID/cc-transaction-data-service:latest
+          ports:
+            - containerPort: 8086
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: gcp
+            - name: CLOUD_SQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cc-cloud-sql-url-transactions
+                  key: latest
+            - name: PUBSUB_ENDPOINT
+              value: pubsub.googleapis.com:443
+          resources:
+            limits:
+              cpu: "2"
+              memory: 1Gi
