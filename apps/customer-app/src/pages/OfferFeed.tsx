@@ -17,15 +17,6 @@ const BRAND_COLORS: Record<string, { bg: string; text: string; accent: string }>
   BRAND_D: { bg: '#FFF7ED', text: '#9A3412', accent: '#F97316' },
 };
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Groceries: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=40&h=40&fit=crop',
-  Fashion: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=40&h=40&fit=crop',
-  Travel: 'https://images.unsplash.com/photo-1436491865332-7a61a109db05?w=40&h=40&fit=crop',
-  Dining: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=40&h=40&fit=crop',
-  Electronics: 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=40&h=40&fit=crop',
-  Entertainment: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=40&h=40&fit=crop',
-  'Health & Wellness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=40&h=40&fit=crop',
-};
 
 const OfferFeed: React.FC = () => {
   const [offers, setOffers] = useState<Offer[]>([]);

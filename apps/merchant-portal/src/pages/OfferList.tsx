@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import type { Offer, OfferStatus } from '../types';
+import type { Offer } from '../types';
 
 const BRAND_LABELS: Record<string, string> = {
   BRAND_A: 'Brand A', BRAND_B: 'Brand B', BRAND_C: 'Brand C', BRAND_D: 'Brand D',

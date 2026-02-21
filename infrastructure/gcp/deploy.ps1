@@ -20,13 +20,43 @@ param(
 )
 
 Set-StrictMode -Off
-$ErrorActionPreference = 'Stop'
+# Use Continue so gcloud.ps1 NativeCommandErrors don't terminate the script —
+# critical failures are caught via $LASTEXITCODE checks in Invoke-Cmd instead.
+$ErrorActionPreference = 'Continue'
+
+# ---------------------------------------------------------------------------
+# PATH FIX — add gcloud + firebase to PATH if launched from a shell that
+# doesn't inherit the Windows PATH (e.g. Git Bash or WSL-spawned PowerShell)
+# ---------------------------------------------------------------------------
+$gcloudCandidates = @(
+    "$env:LOCALAPPDATA\Google\Cloud SDK\google-cloud-sdk\bin",
+    "C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin",
+    "C:\Program Files\Google\Cloud SDK\google-cloud-sdk\bin"
+)
+if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
+    foreach ($candidate in $gcloudCandidates) {
+        if (Test-Path "$candidate\gcloud.cmd") {
+            $env:PATH = "$candidate;$env:PATH"
+            Write-Host "    Added gcloud to PATH: $candidate" -ForegroundColor DarkGray
+            break
+        }
+    }
+}
+$npmBin = (npm root -g 2>$null) -replace "node_modules$", ""
+if ($npmBin -and -not (Get-Command firebase -ErrorAction SilentlyContinue)) {
+    $env:PATH = "$npmBin;$env:PATH"
+}
 
 # ---------------------------------------------------------------------------
 # CONFIG
 # ---------------------------------------------------------------------------
 $PROJECT_ID   = "gen-lang-client-0315293206"
 $REGION       = "us-central1"
+
+# Set env vars so gcloud picks up project/region reliably in all subprocesses
+$env:CLOUDSDK_CORE_PROJECT    = $PROJECT_ID
+$env:CLOUDSDK_RUN_REGION      = $REGION
+$env:CLOUDSDK_CORE_ACCOUNT    = "pavan.kample@gmail.com"
 $REGISTRY     = "$REGION-docker.pkg.dev/$PROJECT_ID/cc-services"
 $DB_INSTANCE  = "cc-postgres"
 $DB_NAME      = "connected_commerce"
@@ -121,10 +151,26 @@ Invoke-Cmd "gcloud config set project $PROJECT_ID"
 Invoke-Cmd "gcloud config set run/region $REGION"
 
 if (-not $OnlyFrontend) {
-    Write-Step "Enabling required GCP APIs (first run takes ~2 min)"
-    $apis = "run.googleapis.com,sqladmin.googleapis.com,artifactregistry.googleapis.com,secretmanager.googleapis.com"
-    Invoke-Cmd "gcloud services enable $apis --quiet"
-    Write-OK "APIs enabled"
+    Write-Step "Enabling required GCP APIs"
+    $requiredApis = @(
+        "run.googleapis.com",
+        "sqladmin.googleapis.com",
+        "artifactregistry.googleapis.com",
+        "secretmanager.googleapis.com"
+    )
+    $enabledList = gcloud services list --enabled --project=$PROJECT_ID --format="value(config.name)" 2>$null
+    $toEnable = $requiredApis | Where-Object { $enabledList -notcontains $_ }
+    if ($toEnable.Count -eq 0) {
+        Write-OK "All required APIs already enabled"
+    } else {
+        Write-Host "    Enabling: $($toEnable -join ', ') (may take ~2 min)..." -ForegroundColor DarkGray
+        gcloud services enable @toEnable --project=$PROJECT_ID --quiet 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "Could not enable APIs (may already be enabled or insufficient permissions — continuing)"
+        } else {
+            Write-OK "APIs enabled"
+        }
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -150,7 +196,9 @@ if (-not $OnlyFrontend) {
     $dbStatus = gcloud sql instances describe $DB_INSTANCE --format="value(state)" 2>$null
     if (-not $dbStatus) {
         Write-Host "    Creating Cloud SQL instance (db-f1-micro, ~7 min)..." -ForegroundColor Yellow
-        Invoke-Cmd "gcloud sql instances create $DB_INSTANCE --database-version=POSTGRES_14 --tier=db-f1-micro --region=$REGION --storage-size=10 --storage-type=SSD --no-backup --labels=$LABELS --quiet"
+        Invoke-Cmd "gcloud sql instances create $DB_INSTANCE --database-version=POSTGRES_14 --tier=db-f1-micro --region=$REGION --storage-size=10 --storage-type=SSD --no-backup --quiet"
+        # Apply labels via patch (--labels on create requires beta track)
+        gcloud sql instances patch $DB_INSTANCE --update-labels=$LABELS --quiet 2>&1 | Out-Null
         Write-OK "Cloud SQL instance created"
 
         # Generate password
@@ -208,30 +256,30 @@ if (-not $OnlyFrontend -and -not $SkipBuild) {
 if (-not $OnlyFrontend) {
     Write-Step "Deploying Java microservices to Cloud Run"
 
-    $DB_URL = "jdbc:postgresql:///$DB_NAME?cloudSqlInstance=$DB_CONNECTION&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
-
+    # JDBC URL is baked into application-gcp.yml in each service image to avoid
+    # gcloud --set-env-vars mis-parsing '?' and '&' characters in URL query strings.
+    # Only simple values (no special chars) are passed via env vars here.
     $serviceUrls = @{}
 
     foreach ($svc in $SERVICES) {
         $imgTag = "$REGISTRY/$($svc.Name):latest"
         Write-Host "    Deploying $($svc.Name)..." -ForegroundColor DarkGray
 
-        $deployCmd = "gcloud run deploy $($svc.Name) " +
-            "--image=`"$imgTag`" " +
-            "--region=$REGION " +
-            "--platform=managed " +
-            "--no-allow-unauthenticated " +
-            "--min-instances=0 " +
-            "--max-instances=10 " +
-            "--memory=512Mi " +
-            "--cpu=1 " +
-            "--port=$($svc.Port) " +
-            "--set-env-vars=SPRING_PROFILES_ACTIVE=gcp,SPRING_DATASOURCE_URL=`"$DB_URL`",SPRING_DATASOURCE_USERNAME=$DB_USER,SPRING_DATASOURCE_PASSWORD=`"$DB_PASS`" " +
-            "--add-cloudsql-instances=$DB_CONNECTION " +
-            "--labels=$LABELS " +
+        & gcloud run deploy $svc.Name `
+            "--image=$imgTag" `
+            "--region=$REGION" `
+            "--platform=managed" `
+            "--no-allow-unauthenticated" `
+            "--min-instances=0" `
+            "--max-instances=10" `
+            "--memory=512Mi" `
+            "--cpu=1" `
+            "--port=$($svc.Port)" `
+            "--set-env-vars=SPRING_PROFILES_ACTIVE=gcp,SPRING_DATASOURCE_USERNAME=$DB_USER,SPRING_DATASOURCE_PASSWORD=$DB_PASS" `
+            "--add-cloudsql-instances=$DB_CONNECTION" `
+            "--labels=$LABELS" `
             "--quiet"
-
-        Invoke-Cmd $deployCmd
+        if ($LASTEXITCODE -ne 0) { throw "Deploy failed: $($svc.Name)" }
 
         $url = gcloud run services describe $svc.Name --region=$REGION --format="value(status.url)"
         $serviceUrls[$svc.Name] = $url
@@ -243,36 +291,26 @@ if (-not $OnlyFrontend) {
     # ---------------------------------------------------------------------------
     Write-Step "Deploying BFF to Cloud Run"
 
-    $bffEnvVars = "NODE_ENV=production," +
-        "PORT=3000," +
-        "DB_HOST=/cloudsql/$DB_CONNECTION," +
-        "DB_NAME=$DB_NAME," +
-        "DB_USER=$DB_USER," +
-        "DB_PASS=`"$DB_PASS`"," +
-        "OFFER_SERVICE_URL=$($serviceUrls['offer-service'])," +
-        "PARTNER_SERVICE_URL=$($serviceUrls['partner-service'])," +
-        "ELIGIBILITY_SERVICE_URL=$($serviceUrls['eligibility-service'])," +
-        "REDEMPTION_SERVICE_URL=$($serviceUrls['redemption-service'])," +
-        "CUSTOMER_DATA_SERVICE_URL=$($serviceUrls['customer-data-service'])," +
-        "TRANSACTION_DATA_SERVICE_URL=$($serviceUrls['transaction-data-service'])"
+    # PORT is reserved by Cloud Run (set automatically from --port=3000); do NOT include it here.
+    # CUSTOMER_SERVICE_URL / TRANSACTION_SERVICE_URL match the env var names used in routes/customers.js
+    $bffEnvVars = "NODE_ENV=production,DB_HOST=/cloudsql/$DB_CONNECTION,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASS=$DB_PASS,OFFER_SERVICE_URL=$($serviceUrls['offer-service']),PARTNER_SERVICE_URL=$($serviceUrls['partner-service']),ELIGIBILITY_SERVICE_URL=$($serviceUrls['eligibility-service']),REDEMPTION_SERVICE_URL=$($serviceUrls['redemption-service']),CUSTOMER_SERVICE_URL=$($serviceUrls['customer-data-service']),TRANSACTION_SERVICE_URL=$($serviceUrls['transaction-data-service'])"
 
     $bffTag = "$REGISTRY/bff:latest"
-    $bffCmd = "gcloud run deploy bff " +
-        "--image=`"$bffTag`" " +
-        "--region=$REGION " +
-        "--platform=managed " +
-        "--allow-unauthenticated " +
-        "--min-instances=1 " +
-        "--max-instances=10 " +
-        "--memory=256Mi " +
-        "--cpu=1 " +
-        "--port=3000 " +
-        "--set-env-vars=$bffEnvVars " +
-        "--add-cloudsql-instances=$DB_CONNECTION " +
-        "--labels=$LABELS " +
+    & gcloud run deploy bff `
+        "--image=$bffTag" `
+        "--region=$REGION" `
+        "--platform=managed" `
+        "--allow-unauthenticated" `
+        "--min-instances=1" `
+        "--max-instances=10" `
+        "--memory=256Mi" `
+        "--cpu=1" `
+        "--port=3000" `
+        "--set-env-vars=$bffEnvVars" `
+        "--add-cloudsql-instances=$DB_CONNECTION" `
+        "--labels=$LABELS" `
         "--quiet"
-
-    Invoke-Cmd $bffCmd
+    if ($LASTEXITCODE -ne 0) { throw "BFF deploy failed" }
 
     $bffUrl = gcloud run services describe bff --region=$REGION --format="value(status.url)"
     $serviceUrls["bff"] = $bffUrl

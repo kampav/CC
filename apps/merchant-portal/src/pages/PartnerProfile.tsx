@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { Partner, PartnerStatus } from '../types';
+import type { Partner } from '../types';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',

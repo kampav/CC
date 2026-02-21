@@ -8,9 +8,6 @@ interface Suggestion {
   rationale: string;
 }
 
-const TIER_COLORS: Record<string, string> = {
-  BRONZE: '#CD7F32', SILVER: '#94A3B8', GOLD: '#D97706', PLATINUM: '#6366F1',
-};
 
 const AIOfferSuggestions: React.FC = () => {
   const [data, setData] = useState<any>(null);

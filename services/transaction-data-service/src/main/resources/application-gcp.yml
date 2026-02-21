@@ -1,7 +1,14 @@
-﻿# GCP profile - disables Kafka consumers (data already seeded via Flyway)
+# GCP profile - Cloud Run + Cloud SQL connection, Kafka disabled
+# HikariCP pool capped at 2: db-f1-micro has max_connections=25;
+# 6 services x 2 = 12 + BFF + reserved slots fits within the limit.
 kafka:
   consumers:
     enabled: false
 spring:
+  datasource:
+    url: jdbc:postgresql:///connected_commerce?cloudSqlInstance=gen-lang-client-0315293206:us-central1:cc-postgres&socketFactory=com.google.cloud.sql.postgres.SocketFactory
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 1
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration

@@ -6,10 +6,26 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 const { authMiddleware } = require('./middleware/auth');
 const { slimMiddleware } = require('./middleware/slim');
 const { initIdentitySchema } = require('./identity');
 const { getAllStates } = require('./circuit');
+const { gcpHeaders } = require('./gcpAuth');
+
+// ─── GCP Service-to-Service Auth Interceptor ─────────────
+// On Cloud Run: automatically adds Authorization: Bearer <identity-token>
+// to all outbound requests targeting Cloud Run service URLs (*.run.app).
+axios.interceptors.request.use(async (config) => {
+  const url = config.url || '';
+  if (url.includes('.run.app')) {
+    // Use the base URL (scheme + host) as the audience
+    const baseUrl = new URL(url).origin;
+    const authHdr = await gcpHeaders(baseUrl);
+    config.headers = { ...config.headers, ...authHdr };
+  }
+  return config;
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,9 +51,15 @@ app.use('/demo', express.static(path.join(__dirname, '../public')));
 app.use(helmet());
 app.use(cors({
   origin: [
-    'http://localhost:5173', // customer-app
-    'http://localhost:5174', // merchant-portal
-    'http://localhost:5175', // colleague-portal
+    'http://localhost:5173', // customer-app (local)
+    'http://localhost:5174', // merchant-portal (local)
+    'http://localhost:5175', // colleague-portal (local)
+    'https://cc-customer-0315.web.app',
+    'https://cc-merchant-0315.web.app',
+    'https://cc-colleague-0315.web.app',
+    'https://cc-customer-0315.firebaseapp.com',
+    'https://cc-merchant-0315.firebaseapp.com',
+    'https://cc-colleague-0315.firebaseapp.com',
   ],
   credentials: true,
 }));
