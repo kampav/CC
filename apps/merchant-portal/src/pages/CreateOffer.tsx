@@ -51,13 +51,20 @@ const CreateOffer: React.FC = () => {
   function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const aspect = img.width / img.height;
+      canvas.width = 400;
+      canvas.height = Math.round(400 / aspect);
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
       setImagePreview(dataUrl);
-      updateField('imageUrl', dataUrl);
+      const key = `offer_img_${Date.now()}`;
+      localStorage.setItem(key, dataUrl);
+      updateField('imageUrl', key);
     };
-    reader.readAsDataURL(file);
+    img.src = URL.createObjectURL(file);
   }
 
   async function handleSubmit(e: React.FormEvent) {

@@ -168,7 +168,9 @@ const OfferDetail: React.FC = () => {
       {/* Offer image */}
       {offer.imageUrl && (
         <div style={{ borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem', height: '200px' }}>
-          <img src={offer.imageUrl} alt={offer.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          <img
+            src={offer.imageUrl.startsWith('offer_img_') ? (localStorage.getItem(offer.imageUrl) || '') : offer.imageUrl}
+            alt={offer.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         </div>

@@ -63,7 +63,7 @@ public class Offer {
     @Column(nullable = false, length = 50)
     private Brand brand = Brand.BRAND_A;
 
-    @Column(name = "image_url", columnDefinition = "TEXT")
+    @Column(name = "image_url", length = 500)
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
