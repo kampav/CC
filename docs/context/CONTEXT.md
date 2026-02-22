@@ -80,7 +80,7 @@ connected-commerce/
 cd C:\Projects\CC\extracted\connected-commerce
 docker compose up -d
 # Wait 15 seconds, then verify:
-docker compose ps   # Should show 3 containers running
+docker compose ps   # Should show cc-postgres, cc-redis, cc-kafka running
 ```
 
 ### Step 2: Start all services (single command)
@@ -131,7 +131,7 @@ Or use stop/start cycle:
 
 ## CURRENT PROGRESS
 
-**Version:** v1.2.0 — **Status:** COMPLETE
+**Version:** v1.3.0 — **Status:** COMPLETE — deployed live on GCP
 
 **v1.1.0 features:**
 - Offer lifecycle, campaigns, compliance, audit
@@ -157,6 +157,22 @@ Or use stop/start cycle:
 - Mobile API layer: slim endpoints, push notification scaffold
 - GCP infrastructure manifests: Cloud Run, Cloud SQL, Pub/Sub, Firebase
 - partner-service V4: CRM-grade commercial customer fields
+
+**v1.3.0 additions:**
+- GCP deployment LIVE: Cloud Run (7 services) + Cloud SQL + Firebase Hosting (3 apps)
+  - https://cc-customer-0315.web.app
+  - https://cc-merchant-0315.web.app
+  - https://cc-colleague-0315.web.app
+- Progressive Web App (PWA): installable from browser, service worker cache-first
+- Full responsive UI: mobile (<768px) / tablet (768-1023px) / desktop (>=1024px)
+  - `useBreakpoint` hook in all 3 apps
+  - Customer App: mobile hamburger + slide-down nav
+  - Merchant/Colleague portals: icon-only sidebar (tablet) + overlay drawer (mobile)
+  - All 30+ pages: responsive grids, stackable two-panel layouts, scrollable tables
+- HikariCP `minimum-idle: 0` on all Java services (Cloud Run scale-to-zero safe)
+- BFF->Java OIDC token auth on Cloud Run via `gcpAuth.js`
+- Docker multi-stage builds for all 7 services
+- GitHub Actions CI (BFF + Java + 3 frontend builds)
 
 ---
 

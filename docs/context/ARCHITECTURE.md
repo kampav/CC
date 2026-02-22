@@ -1,7 +1,7 @@
-# Connected Commerce - Architecture v1.2.0
+# Connected Commerce - Architecture v1.3.0
 
-> **v1.2.0** — Banking Data Platform, Enterprise Personalization & Scale Architecture
-> Two new banking data microservices, Redis caching, A/B personalisation mode, 9 customer personas, mobile API, GCP-ready.
+> **v1.3.0** — GCP Live, PWA, Responsive UI
+> Two new banking data microservices, Redis caching, A/B personalisation mode, 9 customer personas, mobile API, GCP deployed to Cloud Run + Firebase Hosting, Progressive Web App, full responsive UI (mobile/tablet/desktop).
 
 ---
 
@@ -291,17 +291,20 @@ See `docs/context/MOBILE-API.md` for full reference.
 | Keyset pagination | transaction-data-service | `?after=<ts>` cursor, no OFFSET |
 | Kafka partitioning | banking.transactions (6) | customer_id hash → consistent consumer |
 | Redis caching | BFF | Profile 5min, offers 1min, spending 15min |
-| HikariCP pool | All Java services | max 20, min-idle 5 per service |
+| HikariCP pool | All Java services | max 2 (GCP db-f1-micro), min-idle 0 (scale-to-zero safe) |
 | Composite indexes | Both new services | (customer_id, date DESC) on transactions |
 | Circuit breaker | BFF | 5 failures in 30s → OPEN |
 | Eventual consistency | Kafka consumers | Profile/transaction updates async |
-| GCP auto-scale | Cloud Run | min=1 (no cold start), max=100 replicas |
+| GCP auto-scale | Cloud Run | BFF min=1 (no cold start); Java min=0 (scale-to-zero) |
 
 ---
 
-## GCP Deployment (Infrastructure-Ready)
+## GCP Deployment (LIVE)
 
-See `infrastructure/gcp/` for deployment manifests.
+Sites: https://cc-customer-0315.web.app / https://cc-merchant-0315.web.app / https://cc-colleague-0315.web.app
+BFF Cloud Run: https://bff-5inerb4npa-uc.a.run.app
+
+See `infrastructure/gcp/` for deployment scripts and manifests.
 
 ```
 infrastructure/gcp/
@@ -324,6 +327,42 @@ infrastructure/gcp/
 - GCP: Cloud Pub/Sub with `ordering_key = customer_id`
 
 **Spring profile activation:** `SPRING_PROFILES_ACTIVE=gcp` → uses `CLOUD_SQL_URL` and `PUBSUB_ENDPOINT`.
+
+---
+
+## Responsive UI Architecture (v1.3.0)
+
+All three React apps (customer-app, merchant-portal, colleague-portal) are fully responsive. Zero CSS frameworks — 100% inline `style={{}}` with a shared breakpoint hook.
+
+### Breakpoints
+
+| Name | Range | Behaviour |
+|------|-------|-----------|
+| `mobile` | < 768 px | Hamburger nav / overlay drawer |
+| `tablet` | 768 – 1023 px | Icon-only sidebar (64 px) |
+| `desktop` | >= 1024 px | Full layout — unchanged from original |
+
+### Shared Infrastructure (all 3 apps)
+
+| File | What It Does |
+|------|-------------|
+| `src/hooks/useBreakpoint.ts` | `window.innerWidth` + resize listener; returns `'mobile' | 'tablet' | 'desktop'` |
+| `src/index.css` | Global reset, `box-sizing: border-box`, `.table-scroll` (overflow-x: auto), `@keyframes` |
+| `src/main.tsx` | Imports `index.css` |
+
+### Layout Patterns
+
+- **Customer App**: full horizontal top-nav on tablet/desktop; hamburger + slide-down nav on mobile
+- **Merchant/Colleague portals**: 250 px sidebar (desktop) → 64 px icon-only (tablet) → hidden + overlay drawer (mobile)
+
+### Page Patterns
+
+| Pattern | Where |
+|---------|-------|
+| Responsive grid columns (`1fr` → `repeat(2,1fr)` → `auto-fit`) | All KPI/card grids |
+| Flex direction stack (`column` on mobile, `row` on desktop) | Two-panel detail views |
+| `.table-scroll` wrapper + `minWidth` on table | All `<table>` elements |
+| Responsive form grids (`1fr` on mobile → `1fr 1fr` on desktop) | Create/edit forms |
 
 ---
 

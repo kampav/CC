@@ -1,87 +1,113 @@
-# Connected Commerce — Startup Guide (after reboot)
+# Connected Commerce — Quick Start (after reboot)
 
 ## 1. Start Docker infrastructure
 
-```bash
-cd C:/Projects/CC/extracted/connected-commerce
+```powershell
+cd C:\Projects\CC\extracted\connected-commerce
 docker compose up -d
 ```
 
-Wait ~15s for PostgreSQL and Kafka to be healthy:
+Wait ~15s for PostgreSQL, Redis, and Kafka to be healthy:
 
-```bash
+```powershell
 docker compose ps
 ```
 
-## 2. Fix Flyway if V3 migration failed
+---
 
-If offer-service fails to start with `"Found failed migration to version 3"`, run this repair:
+## 2. Start all services
 
-```bash
-docker exec cc-postgres psql -U commerce -d connected_commerce \
-  -c "DELETE FROM offers.flyway_schema_history WHERE version='3' AND success=false;"
+```powershell
+.\scripts\start.ps1
 ```
 
-Then restart offer-service — it will re-run the fixed V3 (constraint drop now happens first).
+This starts all 10 services in the background (no popup windows):
+- 6 Java microservices (ports 8081–8086) — wait ~90s to compile
+- BFF Node.js gateway (port 3000)
+- 3 React frontends (ports 5173–5175)
 
-## 3. Start Java services (open 4 terminals)
+Logs are written to the `logs\` folder.
 
-```bash
-# Terminal 1
-cd services/offer-service && ./mvnw spring-boot:run
+---
 
-# Terminal 2
-cd services/partner-service && ./mvnw spring-boot:run
+## 3. Open the portals
 
-# Terminal 3
-cd services/redemption-service && ./mvnw spring-boot:run
+| URL | Portal | Login |
+|-----|--------|-------|
+| http://localhost:5173 | Customer App | customer@demo.com / demo1234 |
+| http://localhost:5173/demo | A/B Demo | (no login needed) |
+| http://localhost:5174 | Merchant Portal | merchant@demo.com / demo1234 |
+| http://localhost:5175 | Colleague Portal | colleague@demo.com / demo1234 |
+| http://localhost:5175 | Exec Dashboard | exec@demo.com / demo1234 |
+| http://localhost:9080 | Kafka UI | — |
 
-# Terminal 4
-cd services/eligibility-service && ./mvnw spring-boot:run
+Nine customer personas available: `customer@` through `customer9@demo.com` (all pw: `demo1234`)
+
+---
+
+## 4. Stop everything
+
+```powershell
+.\scripts\stop.ps1
 ```
 
-## 4. Start BFF
+---
 
-```bash
-cd services/bff
-cp .env.example .env
-# Edit .env and add GEMINI_API_KEY if you have one
-npm install
-npm run dev
+## Health checks (after ~90s)
+
+```powershell
+curl http://localhost:3000/health
+curl http://localhost:8081/actuator/health
+curl http://localhost:8085/api/v1/customers/health
+curl http://localhost:8086/api/v1/banking-transactions/health
 ```
 
-## 5. Start frontend apps (3 terminals)
+---
 
-```bash
-# Customer App (http://localhost:5173)
-cd apps/customer-app && npm install && npm run dev
+## Troubleshooting
 
-# Merchant Portal (http://localhost:5174)
-cd apps/merchant-portal && npm install && npm run dev
-
-# Colleague Portal (http://localhost:5175)
-cd apps/colleague-portal && npm install && npm run dev
+**Java services failing to start**
+```powershell
+Get-Content logs\offer-service.log -Tail 30
+Get-Content logs\customer-data-service.log -Tail 30
 ```
 
-## 6. Demo API keys
+**"Found failed migration to version 3" (offer-service)**
+```powershell
+docker exec cc-postgres psql -U commerce -d connected_commerce -c "DELETE FROM offers.flyway_schema_history WHERE version='3' AND success=false;"
+```
+Then re-run `.\scripts\start.ps1`.
 
-| Key | Role | Use |
-|-----|------|-----|
-| `customer-demo-key` | CUSTOMER | Customer app |
-| `merchant-demo-key` | MERCHANT | Merchant portal |
-| `admin-demo-key` | ADMIN | Colleague portal |
-
-## 7. Gemini personalisation
-
-Set `GEMINI_API_KEY` in `services/bff/.env` to enable AI-powered recommendations.
-Get a free key at https://aistudio.google.com/app/apikey
-
-Test it:
-```bash
-curl http://localhost:3000/api/v1/recommendations/for-you \
-  -H "X-API-Key: customer-demo-key"
+**Missing customers/banking_transactions schemas**
+```powershell
+docker exec cc-postgres psql -U commerce -d connected_commerce -c "CREATE SCHEMA IF NOT EXISTS customers; CREATE SCHEMA IF NOT EXISTS banking_transactions; GRANT ALL PRIVILEGES ON SCHEMA customers TO commerce; GRANT ALL PRIVILEGES ON SCHEMA banking_transactions TO commerce;"
 ```
 
-The response will include `"source": "gemini-ai"` when Gemini is active, or `"source": "rule-based"` as fallback.
+**BFF not starting / auth errors**
+```powershell
+Get-Content logs\bff-err.log -Tail 20
+```
+Ensure `services\bff\.env` exists (copy from `.env.example`).
 
-New endpoint: `GET /api/v1/recommendations/explain/:offerId` — Gemini explains why an offer suits the customer.
+**Port already in use**
+```powershell
+.\scripts\stop.ps1
+.\scripts\start.ps1
+```
+
+---
+
+## AI Recommendations
+
+Set one key in `services\bff\.env`:
+
+| Provider | Key prefix | Free tier |
+|----------|-----------|-----------|
+| Google Gemini | `AIzaSy…` | Yes (gemini-1.5-flash) |
+| OpenAI | `sk-…` | No |
+| Anthropic Claude | `sk-ant-…` | No |
+
+BFF auto-detects the provider. No restart needed if you pass `X-AI-Key` header instead.
+
+Toggle mode per request: `?mode=ai` or `?mode=rule-based`
+Compare both: `GET /api/v1/recommendations/compare` (with auth header)

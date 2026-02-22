@@ -67,9 +67,12 @@ if %ERRORS% gtr 0 (
     echo   1. Make sure Docker Desktop is running (green icon in system tray)
     echo   2. Run: docker compose up -d
     echo   3. Wait 15 seconds
-    echo   4. Run: docker compose ps (should show 3 running containers)
-    echo   5. Install Maven: winget install Apache.Maven
-    echo   6. Start building! See docs\context\CONTEXT.md for instructions.
+    echo   4. Run: docker compose ps  (should show cc-postgres, cc-redis, cc-kafka)
+    echo   5. Copy BFF config: copy services\bff\.env.example services\bff\.env
+    echo   6. Run: .\scripts\start.ps1
+    echo   7. Wait ~90 seconds, then open http://localhost:5173
+    echo.
+    echo   See SETUP.md for full instructions.
 )
 
 echo ============================================================

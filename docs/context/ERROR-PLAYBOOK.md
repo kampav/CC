@@ -220,6 +220,47 @@ npm run dev
 
 ---
 
+## GCP / CLOUD RUN ERRORS
+
+### "The following reserved env names were provided: PORT"
+**When:** `gcloud run deploy --port=3000 ...`
+**Cause:** Cloud Run reserves `PORT` as an env var and auto-injects it. Passing `--port=3000` as a flag conflicts.
+**Fix:** Remove `--port=3000` from the deploy command. The BFF uses `process.env.PORT || 3000` so Cloud Run's auto-injected PORT works correctly.
+
+### "PSQLException: FATAL: remaining connection slots are reserved for non-replication superuser connections"
+**When:** Multiple Java services on Cloud Run hit db-f1-micro (max_connections=25)
+**Cause:** `minimum-idle: 1` in HikariCP causes each service instance to hold an open connection even when idle. During scale-up events this exhausts connection slots.
+**Fix:** Set `hikari.minimum-idle: 0` in all Java `application-gcp.yml` files. `maximum-pool-size: 2` stays (6 services × 2 = 12 + BFF 3 = 15, well under 25).
+
+### "Error: Request failed with status code 401" on GCP but works locally
+**Cause:** BFF calls Java services on Cloud Run without an OIDC token. Cloud Run services default to requiring authentication.
+**Fix:** `gcpAuth.js` in BFF adds an `Authorization: Bearer <oidc-token>` header for all `*.run.app` upstream calls. Verify this file exists and the axios interceptor is wired in `index.js`.
+
+### Java service returns 503 immediately on GCP
+**Cause:** Service scaled to zero (min-instances=0). First request triggers cold start (~15s).
+**Fix:** Pre-warm by hitting the service's `/health` endpoint once before a demo. Or bump BFF circuit breaker timeout.
+
+---
+
+## TYPESCRIPT / VITE BUILD ERRORS
+
+### "error TS6133: 'useBreakpoint' is declared but its value is never read"
+**When:** Running `npm run build` after adding `useBreakpoint` import
+**Cause:** `noUnusedLocals: true` in tsconfig. Import added but breakpoint variables never used in the component body.
+**Fix:** Ensure every file that imports `useBreakpoint` actually uses it:
+```tsx
+const bp = useBreakpoint();
+const isMobile = bp === 'mobile';
+const isTablet = bp === 'tablet';
+// Use isMobile / isTablet in at least one style prop
+```
+
+### "error TS6133: 'CATEGORY_ICONS' is declared but its value is never read"
+**Cause:** Same `noUnusedLocals` strictness.
+**Fix:** Either use the variable or remove the import entirely.
+
+---
+
 ## GIT ERRORS
 
 ### "not a git repository"

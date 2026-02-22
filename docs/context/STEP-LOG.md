@@ -348,7 +348,55 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 
 ---
 
-## Current State (2026-02-21) -- v1.3.0
+## Phase 13: v1.3.0 -- Full Responsive UI (2026-02-22)
+
+### Infrastructure (all 3 apps)
+- `src/hooks/useBreakpoint.ts` (NEW) — `window.innerWidth` + resize listener; returns `'mobile' | 'tablet' | 'desktop'`
+- `src/index.css` (NEW) — global reset, `box-sizing: border-box`, `.table-scroll` (overflow-x: auto), `@keyframes`
+- `src/main.tsx` — added `import './index.css'`
+
+### Layout components
+- `apps/customer-app/src/components/Layout.tsx` — mobile hamburger + slide-down nav; menu closes on link click
+- `apps/merchant-portal/src/components/Layout.tsx` — icon-only 64px sidebar (tablet); overlay drawer with backdrop (mobile)
+- `apps/colleague-portal/src/components/Layout.tsx` — same as merchant, works with grouped NAV_SECTIONS
+
+### customer-app pages (7 files)
+- Home.tsx: clamp font-size, responsive stat/recs/category/how-it-works grids, responsive hero padding
+- OfferFeed.tsx: responsive offer grid (`1fr` → `repeat(2)` → `auto-fill minmax(300px)`)
+- Login.tsx: responsive card padding/width, persona dropdown `maxHeight: 50vh`
+- MyOffers.tsx: stacked activation rows on mobile (flex-direction: column)
+- MyCashback.tsx: responsive stats grid
+- TransactionHistory.tsx: responsive summary grid, stacked transaction rows
+- PersonalizationDemo.tsx: `display: flex; flex-direction: column/row` (was grid)
+
+### merchant-portal pages (6 files)
+- Dashboard.tsx: responsive KPI grids
+- OfferList.tsx: `.table-scroll` + `minWidth: '700px'`
+- CreateOffer.tsx: responsive form grids (`1fr 1fr` → `1fr` on mobile)
+- AIOfferSuggestions.tsx: responsive suggestions grid
+- PartnerProfile.tsx: responsive form grids
+- TransactionHistory.tsx: `.table-scroll`, responsive summary
+
+### colleague-portal pages (8 files)
+- Dashboard.tsx: responsive KPI + quick-actions grids
+- Analytics.tsx: responsive KPI + tier grids
+- OfferReview.tsx: two-panel stack on mobile (flexDirection: column)
+- CustomerInsights.tsx: responsive cards grid
+- AuditLog.tsx: `.table-scroll` + `minWidth: '700px'`
+- ExecDashboard.tsx: responsive KPI + tier distribution grids
+- MerchantOnboarding.tsx: two-panel stack on mobile
+- CampaignManagement.tsx: responsive form grids
+
+### Bug fixes applied during responsive work
+- HikariCP `minimum-idle: 0` in all 6 Java `application-gcp.yml` (prevents connection exhaustion)
+- Removed `--port=3000` from `deploy-bff-frontend.ps1` (Cloud Run reserves PORT env var)
+
+### Commit
+- `bfe909f` — "feat: full responsive UI — mobile/tablet/desktop (v1.3.0)" — 40 files, 606 insertions
+
+---
+
+## Current State (2026-02-22) -- v1.3.0 LIVE
 
 **All services (10):**
 - offer-service (8081), partner-service (8082), eligibility-service (8083), redemption-service (8084)
@@ -356,9 +404,11 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 - BFF (3000), customer-app (5173), merchant-portal (5174), colleague-portal (5175)
 - Redis (6379), PostgreSQL (5432), Kafka (9092), Kafka UI (9080)
 
-**GCP (v1.3.0 — deploy-ready):**
-- Run `.\infrastructure\gcp\deploy.ps1` after installing gcloud + Docker + Firebase CLI
-- Sites: cc-customer-0315.web.app / cc-merchant-0315.web.app / cc-colleague-0315.web.app
+**GCP (v1.3.0 — LIVE):**
+- https://cc-customer-0315.web.app (PWA-installable, fully responsive)
+- https://cc-merchant-0315.web.app
+- https://cc-colleague-0315.web.app
+- BFF Cloud Run: https://bff-5inerb4npa-uc.a.run.app
 - Cost: ~$9.36/month (Cloud SQL db-f1-micro dominates)
 
 **Data summary:**

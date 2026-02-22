@@ -133,3 +133,18 @@
 **Why:** Demo traffic is sporadic — most of the time services are idle. Scale-to-zero eliminates idle compute cost entirely. BFF keeps one warm instance for instant response on first page load.
 **Cold start impact:** Java services take ~15s to start from cold. For demo, pre-warm by opening each service URL once before presenting.
 **Cost:** Cloud Run free tier covers demo scale. BFF min-instances=1 costs ~$0/month at 512MB (well within Cloud Run free tier's 180,000 vCPU-seconds/month).
+
+## ADR-021: Responsive UI via Inline Styles + useBreakpoint Hook (v1.3.0)
+**Date:** 2026-02-22
+**What we chose:** Keep 100% inline `style={{}}` (no CSS framework, no Tailwind, no media queries) but add a `useBreakpoint` hook that returns `'mobile' | 'tablet' | 'desktop'` based on `window.innerWidth`. Components conditionally apply different style values based on the breakpoint.
+**Why:** Inline styles were already established (ADR-012). Adding a breakpoint hook achieves full responsiveness without changing the styling paradigm, adding dependencies, or introducing a build step.
+**Breakpoints:** mobile < 768px, tablet 768-1023px, desktop >= 1024px
+**Layout approach:** Customer App uses hamburger + slide-down nav on mobile. Merchant/Colleague portals use icon-only sidebar (tablet) or overlay drawer (mobile).
+**Table pattern:** `<div className="table-scroll">` wrapper with `overflow-x: auto` in `index.css` + `minWidth` on the `<table>` — preserves table structure while enabling horizontal scroll on mobile.
+**Trade-off:** Hover states and animations still require JS. The `useBreakpoint` hook fires a re-render on every resize event (debouncing would improve performance at the cost of complexity — acceptable for demo scale).
+
+## ADR-022: HikariCP minimum-idle=0 for Cloud Run (v1.3.0)
+**Date:** 2026-02-22
+**What we chose:** Set `hikari.minimum-idle: 0` (not 1 or higher) in all 6 Java service `application-gcp.yml` files.
+**Why:** Cloud Run scales Java services to zero between requests. When a service scales back up, it creates a new JVM instance. If minimum-idle=1, each instance immediately holds an open connection — with 6 services and sporadic scale-up events, this exhausted Cloud SQL db-f1-micro's max_connections=25 (6 services × max-pool-size 2 + BFF 3 = 15, but spikes during scale-up caused temporary overflows). Setting minimum-idle=0 means connections are only held while requests are in-flight.
+**Trade-off:** First query on a cold connection takes slightly longer (~5ms). Imperceptible at demo scale.

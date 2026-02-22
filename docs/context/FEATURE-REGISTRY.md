@@ -194,9 +194,69 @@ score = categoryAffinity(0-40)     // normalised by real spending from transacti
 
 ---
 
-## Feature: GCP Infrastructure (v1.3.1)
+## Feature: Responsive UI (v1.3.0)
 
-**Status:** DEPLOY-READY (v1.3.1 adds labels + monitoring)
+**Status:** COMPLETE
+
+All three React apps fully responsive: mobile (<768px) / tablet (768-1023px) / desktop (>=1024px).
+
+### Shared infrastructure (all 3 apps)
+
+| File | What It Does |
+|------|-------------|
+| `apps/*/src/hooks/useBreakpoint.ts` | Breakpoint hook — window.innerWidth + resize listener |
+| `apps/*/src/index.css` | Global reset, `.table-scroll`, box-sizing, keyframes |
+| `apps/*/src/main.tsx` | `import './index.css'` |
+
+### Layout components
+
+| File | Changes |
+|------|---------|
+| `apps/customer-app/src/components/Layout.tsx` | Mobile hamburger + slide-down nav |
+| `apps/merchant-portal/src/components/Layout.tsx` | Icon-only sidebar (tablet) + overlay drawer (mobile) |
+| `apps/colleague-portal/src/components/Layout.tsx` | Icon-only sidebar (tablet) + overlay drawer (mobile) |
+
+### customer-app pages
+
+| File | Change |
+|------|--------|
+| `src/pages/Home.tsx` | Responsive grids, clamp font-size |
+| `src/pages/OfferFeed.tsx` | Responsive offer grid |
+| `src/pages/Login.tsx` | Responsive card, dropdown maxHeight |
+| `src/pages/MyOffers.tsx` | Stacked activation rows on mobile |
+| `src/pages/MyCashback.tsx` | Responsive stats grid |
+| `src/pages/TransactionHistory.tsx` | Responsive summary, stacked rows |
+| `src/pages/PersonalizationDemo.tsx` | Flex direction stack on mobile |
+
+### merchant-portal pages
+
+| File | Change |
+|------|--------|
+| `src/pages/Dashboard.tsx` | Responsive KPI grids |
+| `src/pages/OfferList.tsx` | `.table-scroll` + minWidth |
+| `src/pages/CreateOffer.tsx` | Responsive form grids |
+| `src/pages/AIOfferSuggestions.tsx` | Responsive suggestions grid |
+| `src/pages/PartnerProfile.tsx` | Responsive form grids |
+| `src/pages/TransactionHistory.tsx` | `.table-scroll`, responsive summary |
+
+### colleague-portal pages
+
+| File | Change |
+|------|--------|
+| `src/pages/Dashboard.tsx` | Responsive KPI + quick-actions grids |
+| `src/pages/Analytics.tsx` | Responsive KPI + tier grids |
+| `src/pages/OfferReview.tsx` | Two-panel stack on mobile |
+| `src/pages/CustomerInsights.tsx` | Responsive cards grid |
+| `src/pages/AuditLog.tsx` | `.table-scroll` + minWidth |
+| `src/pages/ExecDashboard.tsx` | Responsive KPI + tier grids |
+| `src/pages/MerchantOnboarding.tsx` | Two-panel stack on mobile |
+| `src/pages/CampaignManagement.tsx` | Responsive form grids |
+
+---
+
+## Feature: GCP Infrastructure (v1.3.0)
+
+**Status:** LIVE
 
 | File | What It Does |
 |------|-------------|

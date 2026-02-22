@@ -13,6 +13,8 @@ Install these **once** before anything else:
 
 > After installing Docker Desktop, start it and wait until the whale icon in the system tray stops animating.
 
+Run `check-setup.cmd` to verify everything is installed.
+
 ---
 
 ## First-Time Setup
@@ -24,53 +26,59 @@ git clone https://github.com/kampav/CC.git
 cd CC
 ```
 
-### 2. Start the database (PostgreSQL + Kafka)
+### 2. Start infrastructure (PostgreSQL + Redis + Kafka)
 
 ```powershell
 docker compose up -d
 ```
 
-Wait ~15 seconds. Check it worked:
+Wait ~15 seconds. Verify:
 
 ```powershell
-docker ps   # should show cc-postgres and cc-kafka running
+docker ps   # should show cc-postgres, cc-redis, cc-kafka running
 ```
 
-### 3. Install Node dependencies
+### 3. Create new database schemas (first run only)
 
 ```powershell
-cd services\bff        && npm install && cd ..\..
-cd apps\customer-app   && npm install && cd ..\..
-cd apps\merchant-portal  && npm install && cd ..\..
-cd apps\colleague-portal && npm install && cd ..\..
+docker exec cc-postgres psql -U commerce -d connected_commerce -c "CREATE SCHEMA IF NOT EXISTS customers; CREATE SCHEMA IF NOT EXISTS banking_transactions; GRANT ALL PRIVILEGES ON SCHEMA customers TO commerce; GRANT ALL PRIVILEGES ON SCHEMA banking_transactions TO commerce;"
 ```
 
-### 4. Configure the BFF
+### 4. Install Node dependencies
+
+```powershell
+cd services\bff              && npm install && cd ..\..
+cd apps\customer-app         && npm install && cd ..\..
+cd apps\merchant-portal      && npm install && cd ..\..
+cd apps\colleague-portal     && npm install && cd ..\..
+```
+
+### 5. Configure the BFF
 
 ```powershell
 copy services\bff\.env.example services\bff\.env
 ```
 
-Open `services\bff\.env` in Notepad — you can leave everything as-is for local use.
-To enable AI recommendations, paste one API key (see [AI Keys](#ai-recommendations-optional)).
+Open `services\bff\.env` — defaults work for local use. To enable AI recommendations, add **one** API key (see [AI Keys](#ai-recommendations-optional) below).
 
-### 5. Start everything
+### 6. Start everything
 
 ```powershell
 .\scripts\start.ps1
 ```
 
-Wait **~90 seconds** for the Java services to compile and start, then open:
+Wait **~90 seconds** for the 6 Java services to compile and start, then open:
 
-| URL | What |
-|-----|------|
-| http://localhost:5173 | Customer App |
-| http://localhost:5174 | Merchant Portal |
-| http://localhost:5175 | Colleague Portal |
-| http://localhost:3000/demo | AI Demo Pages |
-| http://localhost:9080 | Kafka UI |
+| URL | What | Login |
+|-----|------|-------|
+| http://localhost:5173 | Customer App | customer@demo.com / demo1234 |
+| http://localhost:5173/demo | A/B Personalisation Demo | (no login) |
+| http://localhost:5174 | Merchant Portal | merchant@demo.com / demo1234 |
+| http://localhost:5175 | Colleague Portal | colleague@demo.com / demo1234 |
+| http://localhost:3000/health | BFF health check | — |
+| http://localhost:9080 | Kafka UI | — |
 
-### 6. Stop everything
+### 7. Stop everything
 
 ```powershell
 .\scripts\stop.ps1
@@ -80,10 +88,30 @@ Wait **~90 seconds** for the Java services to compile and start, then open:
 
 ## Demo Walkthrough
 
-1. **Merchant Portal** → create an offer → submit for review
-2. **Colleague Portal** → approve the offer → set to LIVE
-3. **Customer App** → browse offers → activate → simulate purchase
+1. **Merchant Portal** → login as `merchant@demo.com` → create an offer → submit for review
+2. **Colleague Portal** → login as `colleague@demo.com` → approve the offer → set to LIVE
+3. **Customer App** → login as any persona (e.g. `customer@demo.com`) → browse offers → activate → simulate purchase
 4. **Customer App** → Cashback tab → see cashback credited
+5. **Customer App** → `/demo` → toggle A/B: rule-based vs AI personalisation side by side
+6. **Colleague Portal** → login as `exec@demo.com` → Executive Dashboard → KPIs + AI narrative
+
+---
+
+## Customer Personas
+
+Nine demo customers, all password `demo1234`:
+
+| Email | Name | Segment | Pattern |
+|-------|------|---------|---------|
+| customer@demo.com | Alice | PREMIER | Experience Seeker |
+| customer2@demo.com | Ben | MASS_AFFLUENT | Brand Loyal |
+| customer3@demo.com | Cara | MASS_MARKET | Deal Seeker |
+| customer4@demo.com | Dan | PREMIER | Brand Loyal |
+| customer5@demo.com | Emma | MASS_AFFLUENT | Convenience Shopper |
+| customer6@demo.com | Frank | MASS_MARKET | Deal Seeker |
+| customer7@demo.com | Grace | PREMIER | Experience Seeker |
+| customer8@demo.com | Harry | MASS_AFFLUENT | Brand Loyal |
+| customer9@demo.com | Isla | MASS_MARKET | Convenience Shopper |
 
 ---
 
@@ -92,18 +120,23 @@ Wait **~90 seconds** for the Java services to compile and start, then open:
 The platform works without an AI key — it uses rule-based scoring.
 To enable AI, paste **one** key into `services\bff\.env`:
 
-| Provider | Key prefix | Get key |
-|----------|-----------|---------|
-| Google Gemini (free tier) | `AIzaSy…` | https://aistudio.google.com/app/apikey |
-| OpenAI | `sk-…` | https://platform.openai.com/api-keys |
-| Anthropic Claude | `sk-ant-…` | https://console.anthropic.com/settings/keys |
+| Provider | Key prefix | Model used |
+|----------|-----------|------------|
+| Google Gemini | `AIzaSy…` | gemini-1.5-flash |
+| OpenAI | `sk-…` | gpt-4o-mini |
+| Anthropic Claude | `sk-ant-…` | claude-haiku-4-5-20251001 |
 
-After editing `.env`, restart the BFF:
+The BFF auto-detects the provider from the key prefix. After editing `.env`, restart:
 ```powershell
 .\scripts\stop.ps1 ; .\scripts\start.ps1
 ```
 
-Or try keys live at `http://localhost:3000/demo/ai.html` without restarting.
+Or pass the key live via header without restarting:
+```bash
+curl http://localhost:3000/api/v1/recommendations/for-you \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "X-AI-Key: your-key-here"
+```
 
 ---
 
@@ -112,6 +145,7 @@ Or try keys live at `http://localhost:3000/demo/ai.html` without restarting.
 **Java services won't start**
 - Ensure Java 17 is installed and `JAVA_HOME` is set:
   `echo $env:JAVA_HOME` → should print a path ending in `jdk-17...`
+- Check logs: `Get-Content logs\offer-service.log -Tail 30`
 
 **"Cannot connect to Docker daemon"**
 - Open Docker Desktop and wait for the whale icon to be still
@@ -120,12 +154,21 @@ Or try keys live at `http://localhost:3000/demo/ai.html` without restarting.
 - `.\scripts\stop.ps1` then re-run `.\scripts\start.ps1`
 
 **No data showing in the UI**
-- Java services take ~90s to start. Check logs in the `logs\` folder:
-  `Get-Content logs\offer-service.log -Tail 20`
+- Java services take ~90s to start — check `logs\` folder
+- BFF may have started before Java was ready — wait 10s and refresh
+
+**"Found failed migration to version 3"**
+- Run: `docker exec cc-postgres psql -U commerce -d connected_commerce -c "DELETE FROM offers.flyway_schema_history WHERE version='3' AND success=false;"`
+- Then restart offer-service
 
 **AI falls back to rule-based**
-- Check `logs\bff-err.log` — it shows the exact API error
-- Gemini free tier quota is 15 req/min — wait a moment and retry
+- Check `logs\bff-err.log` for the exact API error
+- Gemini free tier: 15 req/min — wait a moment and retry
+- Use `gemini-1.5-flash` not `gemini-2.0-flash` (free tier limit=0 on 2.0)
+
+**Customer or transaction data not loading**
+- The customers/banking_transactions schemas may not exist yet — run step 3 above
+- Check: `Get-Content logs\customer-data-service.log -Tail 20`
 
 ---
 
@@ -139,51 +182,49 @@ CC/
 │   ├── partner-service/  ← Java Spring Boot  :8082
 │   ├── eligibility-service/ ← Java Spring Boot :8083
 │   ├── redemption-service/  ← Java Spring Boot :8084
+│   ├── customer-data-service/ ← Java Spring Boot :8085
+│   ├── transaction-data-service/ ← Java Spring Boot :8086
 │   └── bff/             ← Node.js Express   :3000
-│       ├── .env.example ← copy to .env
-│       └── public/      ← /demo pages
+│       └── .env.example ← copy to .env
 ├── apps/
-│   ├── customer-app/    ← React Vite        :5173
+│   ├── customer-app/    ← React PWA Vite    :5173
 │   ├── merchant-portal/ ← React Vite        :5174
 │   └── colleague-portal/← React Vite        :5175
+├── infrastructure/
+│   ├── docker/          ← init-db.sql
+│   └── gcp/             ← Cloud Run + Firebase deploy scripts
 ├── docs/                ← architecture docs
-├── docker-compose.yml   ← PostgreSQL + Kafka
+├── docker-compose.yml   ← PostgreSQL + Redis + Kafka
 └── SETUP.md             ← you are here
 ```
 
 ---
 
-## API Keys (demo only)
+## Legacy API Keys
 
-| Key | Role | Portals |
-|-----|------|---------|
-| `customer-demo-key` | Customer | Customer App |
-| `merchant-demo-key` | Merchant | Merchant Portal |
-| `admin-demo-key` | Admin | Colleague Portal |
+Still accepted for backward compatibility (e.g. curl testing):
+
+| Key | Role |
+|-----|------|
+| `customer-demo-key` | CUSTOMER |
+| `merchant-demo-key` | MERCHANT |
+| `admin-demo-key` | ADMIN/COLLEAGUE |
+
+JWT tokens (from `/api/v1/auth/login`) are preferred.
 
 ---
 
 ## Roadmap
 
-### Near term
-- [ ] Replace demo API keys with OAuth 2.0 / JWT
-- [ ] GitHub Actions CI — build & test on every push
+### Done
+- [x] JWT authentication + 9 demo personas
+- [x] AI recommendations (Claude / OpenAI / Gemini) with A/B toggle
+- [x] Redis caching + circuit breaker
+- [x] Customer & transaction data services
+- [x] GCP deployment: Cloud Run + Cloud SQL + Firebase Hosting
+- [x] Progressive Web App (installable from browser)
+- [x] Responsive UI: mobile / tablet / desktop
 
-### GCP Deployment
-- Cloud Run for BFF and Java services (auto-scales to zero)
-- Cloud SQL (PostgreSQL managed)
-- Pub/Sub instead of Kafka
-- Cloud Load Balancer + custom domain
-- Firebase Hosting for frontends
-
-### Mobile (iOS & Android)
-- The BFF REST API is the single integration point
-- iOS: Swift + URLSession calling `https://your-domain/api/v1/...`
-- Android: Kotlin + Retrofit
-- Push notifications: Firebase Cloud Messaging → BFF webhook
-
-### Agents & Chatbots
-- The BFF already supports Claude, OpenAI, and Gemini via `X-AI-Key` header
-- Extend `recommendations.js` to add `/api/v1/chat` endpoint for conversational UI
-- Connect to WhatsApp Business API or Slack for chatbot channels
-- Agent framework: LangChain / CrewAI can call BFF endpoints as tools
+### Next
+- [ ] Agents/chatbots: WhatsApp, Slack, LangChain/CrewAI via BFF
+- [ ] GitHub Actions CI: customer-data-service + transaction-data-service jobs
