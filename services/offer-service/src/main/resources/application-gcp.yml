@@ -10,4 +10,4 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
   flyway:
-    ignore-migration-patterns: "*:failed,*:missing"
+    validate-on-migrate: false
