@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Offer, Brand, OfferType, RedemptionType } from '../types';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -23,6 +24,7 @@ const labelStyle: React.CSSProperties = {
 const EditOffer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useBreakpoint() === 'mobile';
   const [offer, setOffer] = useState<Offer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,7 +154,7 @@ const EditOffer: React.FC = () => {
           <textarea style={{ ...inputStyle, minHeight: '80px' }} value={form.description} onChange={(e) => updateField('description', e.target.value)} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={labelStyle}>Offer Type</label>
             <select style={inputStyle} value={form.offerType} onChange={(e) => updateField('offerType', e.target.value)}>
@@ -169,7 +171,7 @@ const EditOffer: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={labelStyle}>Cashback Rate (%)</label>
             <input style={inputStyle} type="number" step="0.01" min="0" max="100" value={form.cashbackRate} onChange={(e) => updateField('cashbackRate', e.target.value)} />
@@ -184,7 +186,7 @@ const EditOffer: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={labelStyle}>Brand</label>
             <select style={inputStyle} value={form.brand} onChange={(e) => updateField('brand', e.target.value)}>
@@ -205,7 +207,7 @@ const EditOffer: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={labelStyle}>Start Date</label>
             <input style={inputStyle} type="date" value={form.startDate} onChange={(e) => updateField('startDate', e.target.value)} />

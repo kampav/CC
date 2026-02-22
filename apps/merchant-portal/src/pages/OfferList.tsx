@@ -45,7 +45,7 @@ const OfferList: React.FC = () => {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#1E293B', fontWeight: 700 }}>My Offers</h2>
           <p style={{ margin: '0.25rem 0 0', color: '#64748B', fontSize: '0.85rem' }}>{offers.length} offers found</p>

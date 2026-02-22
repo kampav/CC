@@ -118,7 +118,7 @@ const Compliance: React.FC = () => {
       </p>
 
       {/* Summary */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1rem 1.5rem', flex: 1 }}>
           <p style={{ margin: 0, color: '#64748B', fontSize: '0.8rem' }}>Active Rules</p>
           <p style={{ margin: '0.3rem 0 0', fontSize: '1.75rem', fontWeight: 700, color: '#0F172A' }}>{activeCount}/{rules.length}</p>
@@ -134,7 +134,7 @@ const Compliance: React.FC = () => {
       </div>
 
       {/* Filter */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         {['ALL', 'FCA', 'ASA', 'INTERNAL'].map(c => (
           <button key={c} onClick={() => setFilter(c)} style={{
             padding: '0.4rem 1rem', borderRadius: '9999px', fontSize: '0.85rem', cursor: 'pointer',
