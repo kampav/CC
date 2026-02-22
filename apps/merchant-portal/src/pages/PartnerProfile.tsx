@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { Partner } from '../types';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -27,6 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const PartnerProfile: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [partners, setPartners] = useState<Partner[]>([]);
   const [selected, setSelected] = useState<Partner | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,7 +165,7 @@ const PartnerProfile: React.FC = () => {
         <form onSubmit={selected ? handleUpdate : handleCreate} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem', maxWidth: '700px' }}>
           <h3 style={{ margin: '0 0 1rem', color: '#1A2744' }}>{selected ? 'Edit Partner' : 'Register New Partner'}</h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <label style={labelStyle}>Business Name *</label>
               <input style={inputStyle} value={form.businessName} onChange={(e) => updateField('businessName', e.target.value)} required placeholder="e.g. Tesco PLC" />
@@ -174,7 +176,7 @@ const PartnerProfile: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <label style={labelStyle}>Contact Email *</label>
               <input style={inputStyle} type="email" value={form.contactEmail} onChange={(e) => updateField('contactEmail', e.target.value)} required placeholder="partner@company.com" />
@@ -185,7 +187,7 @@ const PartnerProfile: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <label style={labelStyle}>Phone</label>
               <input style={inputStyle} value={form.phone} onChange={(e) => updateField('phone', e.target.value)} placeholder="+44 20 1234 5678" />

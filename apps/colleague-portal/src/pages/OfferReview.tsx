@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 interface Offer {
   id: string;
@@ -25,6 +26,7 @@ const BLOCKED_WORDS = ['guaranteed', 'risk-free', 'unlimited', 'free money'];
 const PROHIBITED_CATEGORIES = ['Gambling', 'Tobacco', 'Weapons', 'Adult Content'];
 
 const OfferReview: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [offers, setOffers] = useState<Offer[]>([]);
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,9 +147,9 @@ const OfferReview: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', flexDirection: isMobile ? 'column' : 'row' }}>
         {/* Offer List */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           {displayOffers.length === 0 ? (
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '3rem', textAlign: 'center' }}>
               <p style={{ color: '#64748B', margin: 0 }}>{tab === 'pending' ? 'No offers pending review.' : 'No offers found.'}</p>
@@ -176,8 +178,8 @@ const OfferReview: React.FC = () => {
 
         {/* Detail Panel */}
         {selected && (
-          <div style={{ width: '420px', flexShrink: 0 }}>
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem', position: 'sticky', top: '2rem' }}>
+          <div style={{ width: isMobile ? '100%' : '420px', flexShrink: 0 }}>
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem', position: isMobile ? 'static' : 'sticky', top: '2rem' }}>
               <h3 style={{ margin: '0 0 1rem', color: '#0F172A' }}>{selected.title}</h3>
 
               <DetailRow label="Offer ID" value={selected.id.slice(0, 12) + '...'} />

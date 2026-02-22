@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const DEMO_CUSTOMERS = [
   { id: '00000000-0000-0000-0000-000000000002', label: 'Customer 1 — Grocery & Dining' },
@@ -12,6 +13,9 @@ const DEMO_CUSTOMERS = [
 ];
 
 const CustomerInsights: React.FC = () => {
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
   const [customerId, setCustomerId] = useState('');
   const [insights, setInsights] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -67,7 +71,7 @@ const CustomerInsights: React.FC = () => {
       {insights && (
         <>
           {/* KPIs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
             <KPI label="Activations" value={insights.activationCount} color="#7C3AED" />
             <KPI label="Transactions" value={insights.transactionCount} color="#0EA5E9" />
             <KPI label="Total Spend" value={`£${(insights.totalSpendGbp || 0).toFixed(2)}`} color="#0F172A" isText />
@@ -84,7 +88,7 @@ const CustomerInsights: React.FC = () => {
           {insights.categoryBreakdown && Object.keys(insights.categoryBreakdown).length > 0 && (
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.25rem', marginBottom: '1.5rem' }}>
               <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', color: '#0F172A' }}>Category Breakdown</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
                 {Object.entries(insights.categoryBreakdown).sort((a: any, b: any) => b[1] - a[1]).map(([cat, count]: [string, any]) => (
                   <div key={cat} style={{ textAlign: 'center', padding: '0.75rem', background: '#F8FAFC', borderRadius: '8px' }}>
                     <p style={{ margin: '0 0 0.25rem', fontSize: '1.25rem', fontWeight: 700, color: '#7C3AED' }}>{count}</p>

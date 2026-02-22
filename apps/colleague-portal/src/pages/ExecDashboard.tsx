@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const TIER_COLORS: Record<string, string> = {
   BRONZE: '#CD7F32', SILVER: '#94A3B8', GOLD: '#D97706', PLATINUM: '#6366F1',
 };
 
 const ExecDashboard: React.FC = () => {
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,7 +47,7 @@ const ExecDashboard: React.FC = () => {
 
       {/* Revenue KPIs */}
       <h3 style={{ margin: '0 0 1rem', color: '#0F172A', fontSize: '1rem' }}>Revenue</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <KPI label="Bank Commission (30d)" value={`£${(data.revenue?.totalBankCommission || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`} color="#059669" isText />
         <KPI label="Revenue Growth MoM" value={`${data.revenue?.growthPct >= 0 ? '+' : ''}${data.revenue?.growthPct}%`} color={data.revenue?.growthPct >= 0 ? '#059669' : '#DC2626'} isText />
         <KPI label="Live Offers" value={data.offers?.live || 0} color="#1E40AF" />
@@ -84,7 +88,7 @@ const ExecDashboard: React.FC = () => {
         <>
           <h3 style={{ margin: '0 0 1rem', color: '#0F172A', fontSize: '1rem' }}>Merchant Tier Distribution</h3>
           <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem', marginBottom: '2rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
               {Object.entries(data.merchantTiers).map(([tier, count]: [string, any]) => (
                 <div key={tier} style={{ textAlign: 'center' }}>
                   <p style={{ margin: '0 0 0.25rem', fontSize: '1.75rem', fontWeight: 700, color: TIER_COLORS[tier] }}>{count}</p>

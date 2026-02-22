@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: '#94A3B8', SCHEDULED: '#3B82F6', ACTIVE: '#10B981', PAUSED: '#F59E0B', COMPLETED: '#6B7280', ARCHIVED: '#374151',
 };
 
 const CampaignManagement: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [availableOffers, setAvailableOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,7 @@ const CampaignManagement: React.FC = () => {
       {(showCreate || editing) && (
         <form onSubmit={editing ? handleUpdate : handleCreate} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ margin: '0 0 1rem', color: '#0F172A' }}>{editing ? 'Edit Campaign' : 'New Campaign'}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <label style={lbl}>Campaign Name *</label>
               <input style={inp} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Summer Cashback Blitz" />
@@ -175,7 +177,7 @@ const CampaignManagement: React.FC = () => {
             <label style={lbl}>Description</label>
             <textarea style={{ ...inp, minHeight: '60px' }} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <label style={lbl}>Target Brands</label>
               <input style={inp} value={form.targetBrands} onChange={e => setForm(p => ({ ...p, targetBrands: e.target.value }))} placeholder="BRAND_A,BRAND_B" />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { usePersonalization } from '../context/PersonalizationContext';
 import { getUser } from '../lib/auth';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const CATEGORY_IMAGES: Record<string, string> = {
   Groceries: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=300&fit=crop',
@@ -46,6 +47,9 @@ const DEFAULT_HERO = {
 const Home: React.FC = () => {
   const { mode } = usePersonalization();
   const user = getUser();
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
 
   const [offerCount, setOfferCount] = useState(0);
   const [cashback, setCashback] = useState(0);
@@ -102,7 +106,7 @@ const Home: React.FC = () => {
       {/* Hero */}
       <div style={{
         background: heroConfig.gradient,
-        borderRadius: '24px', padding: '3rem 2.5rem', color: 'white', marginBottom: '2rem',
+        borderRadius: '24px', padding: isMobile ? '2rem 1.25rem' : '3rem 2.5rem', color: 'white', marginBottom: '2rem',
         position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: '-80px', right: '-40px', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
@@ -119,7 +123,7 @@ const Home: React.FC = () => {
               </span>
             </div>
           )}
-          <h1 style={{ margin: '0 0 0.75rem', fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <h1 style={{ margin: '0 0 0.75rem', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 800, letterSpacing: '-0.02em' }}>
             {firstName ? `Hello, ${firstName}!` : heroConfig.headline}
           </h1>
           <p style={{ margin: '0 0 2rem', fontSize: '1.05rem', color: '#C7D2FE', maxWidth: '550px', lineHeight: 1.7 }}>
@@ -147,7 +151,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
         <StatCard label="Available Offers" value={offerCount.toString()} color="#4338CA" icon="&#128722;" />
         <Link to="/my-offers" style={{ textDecoration: 'none' }}>
           <StatCard label="Active Offers" value={activeOffers.toString()} color="#7C3AED" icon="&#9733;" />
@@ -175,7 +179,7 @@ const Home: React.FC = () => {
             </div>
             <Link to="/browse" style={{ color: '#4338CA', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500 }}>View all &rarr;</Link>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
             {recommendations.map((offer: any) => (
               <Link key={offer.id} to={`/offers/${offer.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <div style={{
@@ -238,7 +242,7 @@ const Home: React.FC = () => {
 
       {/* Browse by Category */}
       <h3 style={{ margin: '0 0 1rem', color: '#1E293B', fontSize: '1.2rem', fontWeight: 700 }}>Browse by Category</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
         {Object.entries(CATEGORY_IMAGES).map(([cat, img]) => (
           <Link key={cat} to={`/browse?category=${encodeURIComponent(cat)}`} style={{ textDecoration: 'none' }}>
             <div style={{
@@ -263,7 +267,7 @@ const Home: React.FC = () => {
 
       {/* How it works */}
       <h3 style={{ margin: '0 0 1rem', color: '#1E293B', fontSize: '1.2rem', fontWeight: 700 }}>How It Works</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <StepCard step="1" title="Browse" description="Explore personalised cashback offers from top brands." color="#4338CA" />
         <StepCard step="2" title="Activate" description="Tap to activate an offer — it's linked to your card instantly." color="#7C3AED" />
         <StepCard step="3" title="Shop" description="Make a purchase at the merchant using your linked card." color="#059669" />

@@ -1,0 +1,7 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+img, video { max-width: 100%; height: auto; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

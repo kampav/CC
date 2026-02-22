@@ -6,6 +6,6 @@ spring:
     url: jdbc:postgresql:///connected_commerce?cloudSqlInstance=gen-lang-client-0315293206:us-central1:cc-postgres&socketFactory=com.google.cloud.sql.postgres.SocketFactory
     hikari:
       maximum-pool-size: 2
-      minimum-idle: 1
+      minimum-idle: 0
   kafka:
     bootstrap-servers: localhost:9092

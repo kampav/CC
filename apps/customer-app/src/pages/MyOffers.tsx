@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Activation } from '../types';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const MyOffers: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [activations, setActivations] = useState<Activation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,8 +109,10 @@ const MyOffers: React.FC = () => {
             border: activation.status === 'ACTIVE' ? '1px solid #E2E8F0' : '1px solid #F1F5F9',
             padding: '1.25rem 1.5rem',
             display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            gap: isMobile ? '1rem' : undefined,
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
             opacity: activation.status === 'ACTIVE' ? 1 : 0.7,
             transition: 'all 0.2s',

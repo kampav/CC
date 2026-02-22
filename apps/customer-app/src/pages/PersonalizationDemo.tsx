@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const CATEGORY_IMAGES: Record<string, string> = {
   Groceries: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=200&fit=crop',
@@ -12,6 +13,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 };
 
 const PersonalizationDemo: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,7 +91,7 @@ const PersonalizationDemo: React.FC = () => {
       )}
 
       {/* Side-by-side comparison */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem' }}>
         {/* Rule-Based column */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>

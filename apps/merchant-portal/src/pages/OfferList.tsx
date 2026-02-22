@@ -107,8 +107,8 @@ const OfferList: React.FC = () => {
       )}
 
       {!loading && offers.length > 0 && (
-        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+        <div className="table-scroll" style={{ background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '700px' }}>
             <thead>
               <tr style={{ background: '#F8FAFC', textAlign: 'left' }}>
                 <th style={{ padding: '0.85rem 1rem', color: '#64748B', fontWeight: 600, fontSize: '0.8rem' }}>Title</th>

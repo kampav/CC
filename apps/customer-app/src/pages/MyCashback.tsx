@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { CashbackSummary } from '../types';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const MyCashback: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [summary, setSummary] = useState<CashbackSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +61,7 @@ const MyCashback: React.FC = () => {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '1.25rem', textAlign: 'center' }}>
           <p style={{ margin: 0, color: '#64748B', fontSize: '0.8rem' }}>Credits</p>
           <p style={{ margin: '0.25rem 0 0', fontSize: '1.5rem', fontWeight: 700, color: '#1E293B' }}>{summary?.credits?.length || 0}</p>

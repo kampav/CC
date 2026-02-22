@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const Analytics: React.FC = () => {
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
   const [offerStats, setOfferStats] = useState<any>(null);
   const [redemptionStats, setRedemptionStats] = useState<any>(null);
   const [revenueStats, setRevenueStats] = useState<any>(null);
@@ -65,7 +69,7 @@ const Analytics: React.FC = () => {
       )}
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <KPI label="Total Offers"    value={totalOffers}  color="#1E40AF" />
         <KPI label="Live Offers"     value={liveOffers}   color="#10B981" />
         <KPI label="Activations"     value={activations}  color="#8B5CF6" />
@@ -79,7 +83,7 @@ const Analytics: React.FC = () => {
         <>
           <h3 style={{ margin: '0 0 1rem', color: '#0F172A', fontSize: '1rem' }}>Commission by Merchant Tier</h3>
           <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem', marginBottom: '2rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
               {revenueStats.byTier.map((t: any) => (
                 <div key={t.merchant_tier} style={{ textAlign: 'center', padding: '1rem', background: '#F8FAFC', borderRadius: '8px' }}>
                   <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#64748B' }}>{t.merchant_tier}</p>

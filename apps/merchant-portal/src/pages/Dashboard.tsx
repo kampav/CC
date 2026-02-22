@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const BRAND_LABELS: Record<string, string> = {
   BRAND_A: 'Brand A', BRAND_B: 'Brand B', BRAND_C: 'Brand C', BRAND_D: 'Brand D',
@@ -32,6 +33,9 @@ interface MerchantInsights {
 }
 
 const Dashboard: React.FC = () => {
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
   const [offerStats, setOfferStats] = useState<OfferStats | null>(null);
   const [redemptionStats, setRedemptionStats] = useState<RedemptionStats | null>(null);
   const [insights, setInsights] = useState<MerchantInsights | null>(null);
@@ -102,7 +106,7 @@ const Dashboard: React.FC = () => {
 
       {/* Offer metrics */}
       <h3 style={{ margin: '0 0 0.75rem', color: '#475569', fontSize: '0.95rem', fontWeight: 700 }}>Offer Metrics</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <MetricCard label="Total Offers" value={totalOffers} color="#1E293B" />
         <MetricCard label="Live" value={liveOffers} color="#059669" />
         <MetricCard label="Drafts" value={draftOffers} color="#D97706" />
@@ -111,7 +115,7 @@ const Dashboard: React.FC = () => {
 
       {/* Redemption metrics */}
       <h3 style={{ margin: '0 0 0.75rem', color: '#475569', fontSize: '0.95rem', fontWeight: 700 }}>Redemption Metrics</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <MetricCard label="Total Activations" value={totalActivations} color="#3B82F6" />
         <MetricCard label="Transactions" value={totalTransactions} color="#0EA5E9" />
         <div style={{

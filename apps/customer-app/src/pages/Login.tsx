@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setToken } from '../lib/auth';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const PERSONAS = [
   { email: 'customer@demo.com',  name: 'Alice Morgan',  segment: 'PREMIER',        pattern: 'EXPERIENCE_SEEKER', lifecycle: 'MATURE'  },
@@ -23,6 +24,8 @@ const SEGMENT_COLOR: Record<string, string> = {
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
   const [email, setEmail] = useState('customer@demo.com');
   const [password, setPassword] = useState('demo1234');
   const [error, setError] = useState('');
@@ -59,7 +62,7 @@ const Login: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '2.5rem', width: '100%', maxWidth: '420px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', padding: isMobile ? '1.5rem' : '2.5rem', width: isMobile ? 'calc(100% - 2rem)' : '100%', maxWidth: '420px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💳</div>
           <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#0F172A', fontWeight: 700 }}>Connected Commerce</h1>
@@ -94,7 +97,7 @@ const Login: React.FC = () => {
           </button>
 
           {showPersonas && (
-            <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', marginTop: '4px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: '280px', overflowY: 'auto' }}>
+            <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', marginTop: '4px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: isMobile ? '50vh' : '280px', overflowY: 'auto' }}>
               {PERSONAS.map(p => (
                 <button
                   key={p.email}

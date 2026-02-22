@@ -111,8 +111,8 @@ const AuditLog: React.FC = () => {
           <p style={{ color: '#64748B', margin: 0 }}>No audit entries found.</p>
         </div>
       ) : (
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+        <div className="table-scroll" style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', minWidth: '700px' }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                 <th style={th}>Timestamp</th>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 interface Partner {
   id: string;
@@ -31,6 +32,7 @@ const KYB_CHECKS = [
 ];
 
 const MerchantOnboarding: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Partner | null>(null);
@@ -95,9 +97,9 @@ const MerchantOnboarding: React.FC = () => {
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', flexDirection: isMobile ? 'column' : 'row' }}>
         {/* List */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           {filtered.length === 0 ? (
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '3rem', textAlign: 'center' }}>
               <p style={{ color: '#64748B', margin: 0 }}>No merchants found.</p>
@@ -130,7 +132,7 @@ const MerchantOnboarding: React.FC = () => {
 
         {/* Detail */}
         {selected && (
-          <div style={{ width: '400px', flexShrink: 0 }}>
+          <div style={{ width: isMobile ? '100%' : '400px', flexShrink: 0 }}>
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem', position: 'sticky', top: '2rem' }}>
               <h3 style={{ margin: '0 0 1rem', color: '#0F172A' }}>{selected.businessName}</h3>
 

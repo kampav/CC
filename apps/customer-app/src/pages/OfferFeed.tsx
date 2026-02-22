@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Offer } from '../types';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const CATEGORIES = ['All', 'Groceries', 'Fashion', 'Travel', 'Dining', 'Electronics', 'Entertainment', 'Health & Wellness'];
 const BRANDS = ['All', 'BRAND_A', 'BRAND_B', 'BRAND_C', 'BRAND_D'];
@@ -19,6 +20,9 @@ const BRAND_COLORS: Record<string, { bg: string; text: string; accent: string }>
 
 
 const OfferFeed: React.FC = () => {
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
@@ -137,7 +141,7 @@ const OfferFeed: React.FC = () => {
       )}
 
       {/* Offer Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
         {displayed.map((offer) => {
           const days = daysUntilExpiry(offer.endDate);
           const urgent = days !== null && days <= 7 && days > 0;

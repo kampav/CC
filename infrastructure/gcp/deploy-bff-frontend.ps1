@@ -115,7 +115,6 @@ $bffTag = "$REGISTRY/bff:latest"
     "--max-instances=10" `
     "--memory=256Mi" `
     "--cpu=1" `
-    "--port=3000" `
     "--set-env-vars=$bffEnvVars" `
     "--add-cloudsql-instances=$DB_CONNECTION" `
     "--labels=$LABELS" `

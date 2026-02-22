@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 interface Suggestion {
   title: string;
@@ -10,6 +11,9 @@ interface Suggestion {
 
 
 const AIOfferSuggestions: React.FC = () => {
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -70,7 +74,7 @@ const AIOfferSuggestions: React.FC = () => {
             <Chip label={`Top performing: ${data.topPerformingCategory}`} color="#059669" />
           </div>
 
-          <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)' }}>
             {(data.suggestions || []).map((s: Suggestion, i: number) => (
               <div key={i} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>

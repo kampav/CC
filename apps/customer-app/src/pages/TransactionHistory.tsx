@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 interface Transaction {
   id: string;
@@ -23,6 +24,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 const TransactionHistory: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,7 +70,7 @@ const TransactionHistory: React.FC = () => {
       </div>
 
       {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <p style={{ margin: 0, color: '#64748B', fontSize: '0.8rem' }}>Transactions</p>
           <p style={{ margin: '0.25rem 0 0', fontSize: '1.75rem', fontWeight: 700, color: '#1E293B' }}>{transactions.length}</p>
@@ -100,7 +102,11 @@ const TransactionHistory: React.FC = () => {
             return (
               <div key={tx.id} style={{
                 background: 'white', borderRadius: '14px', border: '1px solid #E2E8F0',
-                padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '1rem 1.25rem', display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                justifyContent: 'space-between',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: isMobile ? '0.75rem' : undefined,
                 boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
               }}>
                 <div>

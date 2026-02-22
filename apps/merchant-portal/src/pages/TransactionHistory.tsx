@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 interface Transaction {
   id: string;
@@ -23,6 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const TransactionHistory: React.FC = () => {
+  const isMobile = useBreakpoint() === 'mobile';
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
@@ -83,8 +85,8 @@ const TransactionHistory: React.FC = () => {
           <p style={{ color: '#64748B', margin: 0 }}>No transactions found.</p>
         </div>
       ) : (
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+        <div className="table-scroll" style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: isMobile ? '600px' : undefined }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                 <th style={thStyle}>Date</th>

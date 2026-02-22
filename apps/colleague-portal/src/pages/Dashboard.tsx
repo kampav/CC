@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 const Dashboard: React.FC = () => {
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  const isTablet = bp === 'tablet';
   const [offerStats, setOfferStats] = useState<any>(null);
   const [redemptionStats, setRedemptionStats] = useState<any>(null);
   const [pendingOffers, setPendingOffers] = useState(0);
@@ -57,7 +61,7 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <KPI label="Total Offers" value={offerStats?.totalOffers ?? 0} color="#1E40AF" />
         <KPI label="Live Offers" value={offerStats?.count_live ?? 0} color="#059669" />
         <KPI label="Pending Review" value={offerStats?.count_pending_review ?? 0} color="#D97706" />
@@ -88,7 +92,7 @@ const Dashboard: React.FC = () => {
 
       {/* Quick Actions */}
       <h3 style={{ margin: '0 0 1rem', color: '#0F172A', fontSize: '1rem' }}>Quick Actions</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <ActionCard title="Review Offers" description="Approve or reject pending offers" link="/offer-review" color="#F59E0B" />
         <ActionCard title="Onboard Merchants" description="Review merchant applications" link="/merchant-onboarding" color="#3B82F6" />
         <ActionCard title="Manage Campaigns" description="Create and schedule campaigns" link="/campaigns" color="#8B5CF6" />
