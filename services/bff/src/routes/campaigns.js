@@ -10,7 +10,7 @@ function headers(req) {
 }
 
 // POST /api/v1/campaigns
-router.post('/', requireRole('ADMIN'), async (req, res, next) => {
+router.post('/', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.post(`${OFFER_SERVICE}/api/v1/campaigns`, req.body, { headers: headers(req) });
     res.status(201).json(data);
@@ -20,7 +20,7 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // GET /api/v1/campaigns
-router.get('/', requireRole('ADMIN'), async (req, res, next) => {
+router.get('/', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.get(`${OFFER_SERVICE}/api/v1/campaigns`, { headers: headers(req), params: req.query });
     res.json(data);
@@ -30,7 +30,7 @@ router.get('/', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // GET /api/v1/campaigns/:id
-router.get('/:id', requireRole('ADMIN'), async (req, res, next) => {
+router.get('/:id', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.get(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}`, { headers: headers(req) });
     res.json(data);
@@ -40,7 +40,7 @@ router.get('/:id', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // PUT /api/v1/campaigns/:id
-router.put('/:id', requireRole('ADMIN'), async (req, res, next) => {
+router.put('/:id', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.put(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}`, req.body, { headers: headers(req) });
     res.json(data);
@@ -50,7 +50,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // PATCH /api/v1/campaigns/:id/status
-router.patch('/:id/status', requireRole('ADMIN'), async (req, res, next) => {
+router.patch('/:id/status', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.patch(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}/status`, req.body, { headers: headers(req) });
     res.json(data);
@@ -60,7 +60,7 @@ router.patch('/:id/status', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // POST /api/v1/campaigns/:id/offers
-router.post('/:id/offers', requireRole('ADMIN'), async (req, res, next) => {
+router.post('/:id/offers', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.post(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}/offers`, req.body, { headers: headers(req) });
     res.json(data);
@@ -70,7 +70,7 @@ router.post('/:id/offers', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // DELETE /api/v1/campaigns/:id/offers/:offerId
-router.delete('/:id/offers/:offerId', requireRole('ADMIN'), async (req, res, next) => {
+router.delete('/:id/offers/:offerId', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.delete(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}/offers/${req.params.offerId}`, { headers: headers(req) });
     res.json(data);
