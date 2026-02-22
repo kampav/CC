@@ -192,10 +192,16 @@ const CreateOffer: React.FC = () => {
 
         <div style={{ marginBottom: '1rem' }}>
           <label style={labelStyle}>Offer Image</label>
-          <input type="file" accept="image/*" onChange={handleImageFile}
-            style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }} />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <input type="file" accept="image/*" onChange={handleImageFile} style={{ flex: 1, fontSize: '0.85rem' }} />
+            <span style={{ color: '#94A3B8', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>or URL:</span>
+            <input style={{ ...inputStyle, flex: 2 }} value={form.imageUrl.startsWith('offer_img_') ? '' : form.imageUrl}
+              onChange={(e) => { setImagePreview(e.target.value); updateField('imageUrl', e.target.value); }}
+              placeholder="https://example.com/image.jpg" />
+          </div>
           {imagePreview && (
-            <img src={imagePreview} alt="preview" style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
+            <img src={imagePreview} alt="preview" style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E2E8F0' }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           )}
         </div>
 
