@@ -10,7 +10,7 @@ function headers(req) {
 }
 
 // GET /api/v1/audit/offers
-router.get('/offers', requireRole('ADMIN'), async (req, res, next) => {
+router.get('/offers', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.get(`${OFFER_SERVICE}/api/v1/audit/offers`, { headers: headers(req), params: req.query });
     res.json(data);
@@ -20,7 +20,7 @@ router.get('/offers', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // GET /api/v1/audit/offers/:offerId
-router.get('/offers/:offerId', requireRole('ADMIN'), async (req, res, next) => {
+router.get('/offers/:offerId', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
     const { data } = await axios.get(`${OFFER_SERVICE}/api/v1/audit/offers/${req.params.offerId}`, { headers: headers(req) });
     res.json(data);

@@ -32,7 +32,6 @@ public record CreateOfferRequest(
 
         Brand brand,
 
-        @Size(max = 500)
         String imageUrl,
 
         RedemptionType redemptionType,

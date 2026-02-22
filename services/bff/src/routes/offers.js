@@ -42,17 +42,21 @@ router.get('/:id', async (req, res, next) => {
 
 // POST /api/v1/offers - Create offer (MERCHANT or ADMIN only)
 router.post('/', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
-  try {
-    const response = await axios.post(`${OFFER_SERVICE}/api/v1/offers`, req.body, {
-      headers: {
-        'X-Correlation-Id': req.correlationId,
-        'Content-Type': 'application/json',
-      },
-    });
-    res.status(201).json(response.data);
-  } catch (error) {
-    next(error.response ? { status: error.response.status, message: error.response.data } : error);
+  const postHeaders = { 'X-Correlation-Id': req.correlationId, 'Content-Type': 'application/json' };
+  async function attempt(retries) {
+    try {
+      const response = await axios.post(`${OFFER_SERVICE}/api/v1/offers`, req.body, { headers: postHeaders });
+      res.status(201).json(response.data);
+    } catch (error) {
+      const status = error.response?.status;
+      if (retries > 0 && (status === 502 || status === 503 || !error.response)) {
+        await new Promise(r => setTimeout(r, 8000));
+        return attempt(retries - 1);
+      }
+      next(error.response ? { status, message: error.response.data?.message || error.response.data || 'Create offer failed' } : error);
+    }
   }
+  attempt(2);
 });
 
 // PUT /api/v1/offers/:id - Update offer (MERCHANT or ADMIN only)

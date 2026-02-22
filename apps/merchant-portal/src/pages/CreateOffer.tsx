@@ -42,9 +42,22 @@ const CreateOffer: React.FC = () => {
     endDate: '',
     imageUrl: '',
   });
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setImagePreview(dataUrl);
+      updateField('imageUrl', dataUrl);
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -171,8 +184,12 @@ const CreateOffer: React.FC = () => {
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
-          <label style={labelStyle}>Image URL</label>
-          <input style={inputStyle} value={form.imageUrl} onChange={(e) => updateField('imageUrl', e.target.value)} placeholder="https://example.com/offer-image.jpg" />
+          <label style={labelStyle}>Offer Image</label>
+          <input type="file" accept="image/*" onChange={handleImageFile}
+            style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }} />
+          {imagePreview && (
+            <img src={imagePreview} alt="preview" style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
+          )}
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>

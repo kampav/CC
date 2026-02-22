@@ -26,6 +26,7 @@ const EditOffer: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useBreakpoint() === 'mobile';
   const [offer, setOffer] = useState<Offer | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +71,7 @@ const EditOffer: React.FC = () => {
         endDate: data.endDate ? data.endDate.split('T')[0] : '',
         imageUrl: data.imageUrl || '',
       });
+      if (data.imageUrl) setImagePreview(data.imageUrl);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -79,6 +81,18 @@ const EditOffer: React.FC = () => {
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setImagePreview(dataUrl);
+      updateField('imageUrl', dataUrl);
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -220,6 +234,15 @@ const EditOffer: React.FC = () => {
             <label style={labelStyle}>Max Activations</label>
             <input style={inputStyle} type="number" min="1" value={form.maxActivations} onChange={(e) => updateField('maxActivations', e.target.value)} placeholder="Unlimited" />
           </div>
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={labelStyle}>Offer Image</label>
+          <input type="file" accept="image/*" onChange={handleImageFile}
+            style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }} />
+          {imagePreview && (
+            <img src={imagePreview} alt="preview" style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
+          )}
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>
