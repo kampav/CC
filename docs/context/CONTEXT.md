@@ -7,7 +7,7 @@
 ## WHO IS BUILDING THIS?
 
 **Name:** Pav
-**Role:** Head of Engineering at Lloyds Banking Group
+**Role:** Head of Engineering at a major UK retail bank
 **Operating System:** Windows 11
 **Terminal:** PowerShell, Windows Command Prompt, or Git Bash
 **Code Editor:** VS Code
@@ -18,7 +18,7 @@
 
 **In plain English:** An app where shops (merchants) can post special offers (like "10% cashback at Tesco"), and bank customers see those offers in their banking app. When a customer shops at that store, they automatically get money back.
 
-**Technical name:** Connected Commerce Platform — a two-sided marketplace connecting LBG retail customers with commercial banking clients (merchants) through personalised offers, cashback rewards, and loyalty experiences.
+**Technical name:** Connected Commerce Platform — a two-sided marketplace connecting bank retail customers with commercial banking clients (merchants) through personalised offers, cashback rewards, and loyalty experiences.
 
 **Who uses it:**
 - **Customers** (bank app users) — browse offers, activate cashback, earn rewards
@@ -160,9 +160,9 @@ Or use stop/start cycle:
 
 **v1.3.0 additions:**
 - GCP deployment LIVE: Cloud Run (7 services) + Cloud SQL + Firebase Hosting (3 apps)
-  - https://cc-customer-0315.web.app
-  - https://cc-merchant-0315.web.app
-  - https://cc-colleague-0315.web.app
+  - https://[your-customer-site].web.app
+  - https://[your-merchant-site].web.app
+  - https://[your-colleague-site].web.app
 - Progressive Web App (PWA): installable from browser, service worker cache-first
 - Full responsive UI: mobile (<768px) / tablet (768-1023px) / desktop (>=1024px)
   - `useBreakpoint` hook in all 3 apps

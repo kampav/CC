@@ -1,16 +1,16 @@
 # GCP Deployment — Connected Commerce Platform
 
 > **Demo deployment**: Cloud Run + Cloud SQL + Firebase Hosting
-> Target cost: ~$9.50/month | Project: gen-lang-client-0315293206 | Region: us-central1
+> Target cost: ~$9.50/month | Project: [GCP_PROJECT_ID] | Region: us-central1
 
 ## Architecture
 
 ```
 Firebase Hosting (free)          Cloud Run (free at demo scale)
 +---------------------+          +----------------------------------+
-| cc-customer-0315    |--/api/**>| bff (min-instances=1)            |
-| cc-merchant-0315    |          |   +-> offer-service      (8081)  |
-| cc-colleague-0315   |          |   +-> partner-service    (8082)  |
+| cc-customer    |--/api/**>| bff (min-instances=1)            |
+| cc-merchant    |          |   +-> offer-service      (8081)  |
+| cc-colleague   |          |   +-> partner-service    (8082)  |
 +---------------------+          |   +-> eligibility-service(8083)  |
                                  |   +-> redemption-service (8084)  |
                                  |   +-> customer-data-svc  (8085)  |
@@ -67,9 +67,9 @@ firebase login
 
 ### 4. Create Firebase Hosting sites (one-time)
 ```powershell
-firebase hosting:sites:create cc-customer-0315 --project gen-lang-client-0315293206
-firebase hosting:sites:create cc-merchant-0315 --project gen-lang-client-0315293206
-firebase hosting:sites:create cc-colleague-0315 --project gen-lang-client-0315293206
+firebase hosting:sites:create cc-customer --project [GCP_PROJECT_ID]
+firebase hosting:sites:create cc-merchant --project [GCP_PROJECT_ID]
+firebase hosting:sites:create cc-colleague --project [GCP_PROJECT_ID]
 ```
 
 ### 5. Verify everything is ready
@@ -110,9 +110,9 @@ After deploy, URLs are saved to `infrastructure/gcp/urls.json`.
 
 | App | URL |
 |-----|-----|
-| Customer App (PWA) | https://cc-customer-0315.web.app |
-| Merchant Portal | https://cc-merchant-0315.web.app |
-| Colleague Portal | https://cc-colleague-0315.web.app |
+| Customer App (PWA) | https://[your-customer-site].web.app |
+| Merchant Portal | https://[your-merchant-site].web.app |
+| Colleague Portal | https://[your-colleague-site].web.app |
 
 ### Demo Users (password: `demo1234`)
 
@@ -157,7 +157,7 @@ gcloud sql instances describe cc-postgres --format="value(state)"
 
 # Connect to Cloud SQL locally (needs Cloud SQL Auth Proxy)
 # Download: https://cloud.google.com/sql/docs/postgres/connect-auth-proxy
-./cloud-sql-proxy gen-lang-client-0315293206:us-central1:cc-postgres --port=5433
+./cloud-sql-proxy [GCP_PROJECT_ID]:us-central1:cc-postgres --port=5433
 # Then: psql -h localhost -p 5433 -U commerce -d connected_commerce
 ```
 
@@ -178,7 +178,7 @@ gcloud sql instances describe cc-postgres --format="value(state)"
 **Java service fails to start (Flyway / Cloud SQL error)**
 Grant Cloud SQL Client role to the default compute service account:
 ```powershell
-gcloud projects add-iam-policy-binding gen-lang-client-0315293206 `
+gcloud projects add-iam-policy-binding [GCP_PROJECT_ID] `
   --member="serviceAccount:$(gcloud iam service-accounts list --format='value(email)' --filter='email~compute')" `
   --role="roles/cloudsql.client"
 ```

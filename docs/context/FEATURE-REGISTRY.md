@@ -269,26 +269,26 @@ All three React apps fully responsive: mobile (<768px) / tablet (768-1023px) / d
 | `infrastructure/gcp/cloud-sql/README.md` | Cloud SQL connection reference |
 | `infrastructure/gcp/firebase/firebase.json` | Firebase Hosting reference |
 | `apps/customer-app/firebase.json` | Firebase Hosting for customer app (rewrites /api/** to BFF Cloud Run) |
-| `apps/customer-app/.firebaserc` | Links to GCP project gen-lang-client-0315293206, site cc-customer-0315 |
-| `apps/merchant-portal/firebase.json` | Firebase Hosting for merchant portal, site cc-merchant-0315 |
-| `apps/colleague-portal/firebase.json` | Firebase Hosting for colleague portal, site cc-colleague-0315 |
+| `apps/customer-app/.firebaserc` | Links to GCP project [GCP_PROJECT_ID], site cc-customer |
+| `apps/merchant-portal/firebase.json` | Firebase Hosting for merchant portal, site cc-merchant |
+| `apps/colleague-portal/firebase.json` | Firebase Hosting for colleague portal, site cc-colleague |
 | `services/*/Dockerfile` | Multi-stage Docker images for all 7 services (6 Java + BFF Node.js) |
 | `services/customer-data-service/src/main/resources/application-gcp.yml` | Kafka disable + KafkaAutoConfiguration exclude |
 | `services/transaction-data-service/src/main/resources/application-gcp.yml` | Kafka disable + KafkaAutoConfiguration exclude |
 | `services/offer-service/src/main/resources/application-gcp.yml` | Dummy Kafka bootstrap-servers (publisher is fire-and-forget) |
 
 GCP sites (after deploy):
-- https://cc-customer-0315.web.app -- Customer App (PWA-installable)
-- https://cc-merchant-0315.web.app -- Merchant Portal
-- https://cc-colleague-0315.web.app -- Colleague Portal
+- https://[your-customer-site].web.app -- Customer App (PWA-installable)
+- https://[your-merchant-site].web.app -- Merchant Portal
+- https://[your-colleague-site].web.app -- Colleague Portal
 
 **Resource labels** (v1.3.1) applied at deploy time to all Cloud Run + Cloud SQL:
 `app=connected-commerce, env=demo, version=v1-3-0, team=engineering`
 
 **Monitoring** (v1.3.1):
-- 4 uptime checks at 5-min intervals: BFF /health, cc-customer-0315.web.app, cc-merchant-0315.web.app, cc-colleague-0315.web.app
+- 4 uptime checks at 5-min intervals: BFF /health, [your-customer-site].web.app, [your-merchant-site].web.app, [your-colleague-site].web.app
 - Email alert on failure > 60s → GCP account email; auto-closes after 24h
-- Console: https://console.cloud.google.com/monitoring/uptime?project=gen-lang-client-0315293206
+- Console: https://console.cloud.google.com/monitoring/uptime?project=[GCP_PROJECT_ID]
 
 ---
 

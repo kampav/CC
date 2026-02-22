@@ -1,5 +1,5 @@
 -- V3__rebrand_and_seed_data.sql
--- Remove LBG brand references, replace with Brand A/B/C/D
+-- Rebrand offer brands to generic Brand A/B/C/D
 -- Seed synthetic data for personalization demo
 
 -- 1. Drop old constraint FIRST (must happen before updating values)

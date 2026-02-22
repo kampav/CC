@@ -2,7 +2,6 @@
 
 > Bridging Retail & Commercial Banking through Merchant Offers, Cashback & Loyalty
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://cc-customer-0315.web.app)
 
 ## Overview
 
@@ -15,13 +14,9 @@ A two-sided marketplace connecting bank retail customers with commercial banking
 
 ## Live Demo (GCP / Firebase)
 
-| Portal | URL | Login |
-|--------|-----|-------|
-| Customer App | https://cc-customer-0315.web.app | customer@demo.com / demo1234 |
-| Merchant Portal | https://cc-merchant-0315.web.app | merchant@demo.com / demo1234 |
-| Colleague Portal | https://cc-colleague-0315.web.app | colleague@demo.com / demo1234 |
+Deploy to your own GCP project using the scripts in `infrastructure/gcp/`. See [infrastructure/gcp/README.md](infrastructure/gcp/README.md) for setup instructions.
 
-Nine customer personas available: `customer@` through `customer9@demo.com` (all pw: `demo1234`)
+Demo credentials (local): `customer@demo.com` / `demo1234` (9 personas available)
 
 ## Quick Start (Local)
 

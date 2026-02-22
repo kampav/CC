@@ -219,9 +219,9 @@ Hosting sites. Safe to re-run if you get interrupted.
 ```
 
 **Shareable URLs (after deploy):**
-- https://cc-customer-0315.web.app -- Customer App (PWA, installable on mobile)
-- https://cc-merchant-0315.web.app -- Merchant Portal
-- https://cc-colleague-0315.web.app -- Colleague Portal
+- https://[your-customer-site].web.app -- Customer App (PWA, installable on mobile)
+- https://[your-merchant-site].web.app -- Merchant Portal
+- https://[your-colleague-site].web.app -- Colleague Portal
 
 **Cost:** ~$9.36/month (Cloud SQL db-f1-micro ~$9.16 + Artifact Registry ~$0.20)
 

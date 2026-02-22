@@ -285,7 +285,7 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 ### GCP Infrastructure (deploy-ready)
 - `infrastructure/gcp/deploy.ps1` — master PowerShell deploy script
   - Creates Cloud SQL `cc-postgres` db-f1-micro PostgreSQL 14 (us-central1, ~$9.50/mo)
-  - Builds + pushes Docker images to Artifact Registry (`us-central1-docker.pkg.dev/gen-lang-client-0315293206/cc-services/`)
+  - Builds + pushes Docker images to Artifact Registry (`us-central1-docker.pkg.dev/[GCP_PROJECT_ID]/cc-services/`)
   - Deploys 6 Java services to Cloud Run (min-instances=0, scale-to-zero)
   - Deploys BFF to Cloud Run (min-instances=1, always-on)
   - Builds 3 React apps + deploys to Firebase Hosting
@@ -299,10 +299,10 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 - Activation: `SPRING_PROFILES_ACTIVE=gcp` as Cloud Run env var
 
 ### Firebase Hosting
-- `apps/customer-app/firebase.json` — site: `cc-customer-0315`, rewrites `/api/**` to BFF Cloud Run service
-- `apps/merchant-portal/firebase.json` — site: `cc-merchant-0315`
-- `apps/colleague-portal/firebase.json` — site: `cc-colleague-0315`
-- All three `.firebaserc` files link to project `gen-lang-client-0315293206`
+- `apps/customer-app/firebase.json` — site: `cc-customer`, rewrites `/api/**` to BFF Cloud Run service
+- `apps/merchant-portal/firebase.json` — site: `cc-merchant`
+- `apps/colleague-portal/firebase.json` — site: `cc-colleague`
+- All three `.firebaserc` files link to project `[GCP_PROJECT_ID]`
 
 ### PWA (Customer App)
 - `apps/customer-app/public/manifest.json` — installable app: name, theme_color #0a2342, icons, shortcuts to /browse + /cashback
@@ -331,9 +331,9 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 - Creates email notification channel "CC Platform Alerts" targeted at GCP account email
 - Creates 4 uptime checks at 5-min intervals:
   - `cc-bff-health` → BFF Cloud Run URL /health
-  - `cc-customer-site` → cc-customer-0315.web.app/
-  - `cc-merchant-site` → cc-merchant-0315.web.app/
-  - `cc-colleague-site` → cc-colleague-0315.web.app/
+  - `cc-customer-site` → [your-customer-site].web.app/
+  - `cc-merchant-site` → [your-merchant-site].web.app/
+  - `cc-colleague-site` → [your-colleague-site].web.app/
 - Creates alerting policy: email alert if any check fails > 60s; auto-closes after 24h
 - All steps idempotent (safe to re-run)
 
@@ -405,10 +405,10 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 - Redis (6379), PostgreSQL (5432), Kafka (9092), Kafka UI (9080)
 
 **GCP (v1.3.0 — LIVE):**
-- https://cc-customer-0315.web.app (PWA-installable, fully responsive)
-- https://cc-merchant-0315.web.app
-- https://cc-colleague-0315.web.app
-- BFF Cloud Run: https://bff-5inerb4npa-uc.a.run.app
+- https://[your-customer-site].web.app (PWA-installable, fully responsive)
+- https://[your-merchant-site].web.app
+- https://[your-colleague-site].web.app
+- BFF Cloud Run: https://[your-bff-service].run.app
 - Cost: ~$9.36/month (Cloud SQL db-f1-micro dominates)
 
 **Data summary:**

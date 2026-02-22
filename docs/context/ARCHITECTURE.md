@@ -301,8 +301,8 @@ See `docs/context/MOBILE-API.md` for full reference.
 
 ## GCP Deployment (LIVE)
 
-Sites: https://cc-customer-0315.web.app / https://cc-merchant-0315.web.app / https://cc-colleague-0315.web.app
-BFF Cloud Run: https://bff-5inerb4npa-uc.a.run.app
+Sites: https://[your-customer-site].web.app / https://[your-merchant-site].web.app / https://[your-colleague-site].web.app
+BFF Cloud Run: https://[your-bff-service].run.app
 
 See `infrastructure/gcp/` for deployment scripts and manifests.
 

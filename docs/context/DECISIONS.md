@@ -117,7 +117,7 @@
 **Date:** 2026-02-21
 **What we chose:** Firebase Hosting serves the 3 React apps and rewrites `/api/**` to the BFF Cloud Run service via `"run": { "serviceId": "bff" }` — no custom domain, no API gateway.
 **Why:** Browser sees all requests going to the same Firebase origin. Zero CORS configuration needed. React apps call `/api/v1/...` unchanged — identical to local dev. Firebase Hosting is free. Eliminates Cloud Endpoints cost.
-**Implementation:** `apps/*/firebase.json` with `rewrites` array. `.firebaserc` links to `gen-lang-client-0315293206`.
+**Implementation:** `apps/*/firebase.json` with `rewrites` array. `.firebaserc` links to `[GCP_PROJECT_ID]`.
 **Trade-off:** Firebase rewrite only works for Cloud Run services in the same GCP project and region. Not suitable if BFF is in a different project/region.
 
 ## ADR-019: Kafka Disable via @ConditionalOnProperty + GCP Spring Profile (v1.3.0)

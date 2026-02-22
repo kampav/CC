@@ -11,7 +11,7 @@
 Copy this ENTIRE block, fill in the blanks, and paste as your FIRST message in a new chat:
 
 ```
-I'm building the Connected Commerce Platform for Lloyds Banking Group. I am NOT a programmer — I need every instruction explained in plain English with complete files I can copy-paste. I'm on Windows using PowerShell.
+I'm building the Connected Commerce Platform. I am NOT a programmer — I need every instruction explained in plain English with complete files I can copy-paste. I'm on Windows using PowerShell.
 
 GOLDEN RULES:
 - Give me COMPLETE files only (never "add this to line 42")
