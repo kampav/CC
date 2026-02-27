@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const { requireRole } = require('../middleware/auth');
+const { withRetry } = require('../utils');
 
 const router = express.Router();
 const OFFER_SERVICE = process.env.OFFER_SERVICE_URL || 'http://localhost:8081';
@@ -12,10 +13,12 @@ function headers(req) {
 // POST /api/v1/campaigns
 router.post('/', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const { data } = await axios.post(`${OFFER_SERVICE}/api/v1/campaigns`, req.body, { headers: headers(req) });
+    const { data } = await withRetry(() =>
+      axios.post(`${OFFER_SERVICE}/api/v1/campaigns`, req.body, { headers: headers(req) })
+    );
     res.status(201).json(data);
   } catch (err) {
-    next(err.response ? { status: err.response.status, message: err.response.data?.error || 'Campaign create error' } : err);
+    next(err.response ? { status: err.response.status, message: err.response.data?.error || err.response.data || 'Campaign create error' } : err);
   }
 });
 
@@ -42,7 +45,9 @@ router.get('/:id', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, n
 // PUT /api/v1/campaigns/:id
 router.put('/:id', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const { data } = await axios.put(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}`, req.body, { headers: headers(req) });
+    const { data } = await withRetry(() =>
+      axios.put(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}`, req.body, { headers: headers(req) })
+    );
     res.json(data);
   } catch (err) {
     next(err.response ? { status: err.response.status, message: err.response.data?.error || 'Campaign update error' } : err);
@@ -52,7 +57,9 @@ router.put('/:id', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, n
 // PATCH /api/v1/campaigns/:id/status
 router.patch('/:id/status', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const { data } = await axios.patch(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}/status`, req.body, { headers: headers(req) });
+    const { data } = await withRetry(() =>
+      axios.patch(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}/status`, req.body, { headers: headers(req) })
+    );
     res.json(data);
   } catch (err) {
     next(err.response ? { status: err.response.status, message: err.response.data?.error || 'Campaign status error' } : err);
@@ -62,7 +69,9 @@ router.patch('/:id/status', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (re
 // POST /api/v1/campaigns/:id/offers
 router.post('/:id/offers', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const { data } = await axios.post(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}/offers`, req.body, { headers: headers(req) });
+    const { data } = await withRetry(() =>
+      axios.post(`${OFFER_SERVICE}/api/v1/campaigns/${req.params.id}/offers`, req.body, { headers: headers(req) })
+    );
     res.json(data);
   } catch (err) {
     next(err.response ? { status: err.response.status, message: err.response.data?.error || 'Add offers error' } : err);

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/v1/campaigns")
@@ -53,10 +54,19 @@ public class CampaignController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<CampaignResponse> changeStatus(
+    public ResponseEntity<?> changeStatus(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body) {
-        CampaignStatus target = CampaignStatus.valueOf(body.get("status"));
+        String statusStr = body.get("status");
+        if (statusStr == null) {
+            return ResponseEntity.badRequest().body(new HashMap<>(Map.of("error", "status is required")));
+        }
+        CampaignStatus target;
+        try {
+            target = CampaignStatus.valueOf(statusStr);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new HashMap<>(Map.of("error", "Invalid status: " + statusStr)));
+        }
         String changedBy = body.getOrDefault("changedBy", "system");
         Campaign campaign = campaignService.changeStatus(id, target, changedBy);
         return ResponseEntity.ok(CampaignResponse.from(campaign));

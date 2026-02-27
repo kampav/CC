@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const { requireRole } = require('../middleware/auth');
+const { withRetry } = require('../utils');
 const router = express.Router();
 
 const PARTNER_SERVICE = process.env.PARTNER_SERVICE_URL || 'http://localhost:8082';
@@ -40,30 +41,29 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/v1/partners - Register a new partner
-router.post('/', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
+// POST /api/v1/partners - Register a new partner (MERCHANT, COLLEAGUE, EXEC, ADMIN)
+// Colleagues can onboard new merchants via the colleague portal
+router.post('/', requireRole('MERCHANT', 'ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const response = await axios.post(`${PARTNER_SERVICE}/api/v1/partners`, req.body, {
-      headers: {
-        'X-Correlation-Id': req.correlationId,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await withRetry(() =>
+      axios.post(`${PARTNER_SERVICE}/api/v1/partners`, req.body, {
+        headers: { 'X-Correlation-Id': req.correlationId, 'Content-Type': 'application/json' },
+      })
+    );
     res.status(201).json(response.data);
   } catch (error) {
     next(error.response ? { status: error.response.status, message: error.response.data } : error);
   }
 });
 
-// PUT /api/v1/partners/:id - Update partner
-router.put('/:id', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
+// PUT /api/v1/partners/:id - Update partner (MERCHANT, COLLEAGUE, EXEC, ADMIN)
+router.put('/:id', requireRole('MERCHANT', 'ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const response = await axios.put(`${PARTNER_SERVICE}/api/v1/partners/${req.params.id}`, req.body, {
-      headers: {
-        'X-Correlation-Id': req.correlationId,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await withRetry(() =>
+      axios.put(`${PARTNER_SERVICE}/api/v1/partners/${req.params.id}`, req.body, {
+        headers: { 'X-Correlation-Id': req.correlationId, 'Content-Type': 'application/json' },
+      })
+    );
     res.json(response.data);
   } catch (error) {
     next(error.response ? { status: error.response.status, message: error.response.data } : error);
@@ -71,14 +71,15 @@ router.put('/:id', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
 });
 
 // PATCH /api/v1/partners/:id/status - Change partner status
-router.patch('/:id/status', requireRole('ADMIN'), async (req, res, next) => {
+// COLLEAGUE and EXEC: approve/reject/suspend merchant onboarding
+// ADMIN: full control
+router.patch('/:id/status', requireRole('ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const response = await axios.patch(`${PARTNER_SERVICE}/api/v1/partners/${req.params.id}/status`, req.body, {
-      headers: {
-        'X-Correlation-Id': req.correlationId,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await withRetry(() =>
+      axios.patch(`${PARTNER_SERVICE}/api/v1/partners/${req.params.id}/status`, req.body, {
+        headers: { 'X-Correlation-Id': req.correlationId, 'Content-Type': 'application/json' },
+      })
+    );
     res.json(response.data);
   } catch (error) {
     next(error.response ? { status: error.response.status, message: error.response.data } : error);

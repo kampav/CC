@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const { requireRole } = require('../middleware/auth');
+const { withRetry } = require('../utils');
 const router = express.Router();
 
 const OFFER_SERVICE = process.env.OFFER_SERVICE_URL || 'http://localhost:8081';
@@ -62,27 +63,27 @@ router.post('/', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
 // PUT /api/v1/offers/:id - Update offer (MERCHANT or ADMIN only)
 router.put('/:id', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
   try {
-    const response = await axios.put(`${OFFER_SERVICE}/api/v1/offers/${req.params.id}`, req.body, {
-      headers: {
-        'X-Correlation-Id': req.correlationId,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await withRetry(() =>
+      axios.put(`${OFFER_SERVICE}/api/v1/offers/${req.params.id}`, req.body, {
+        headers: { 'X-Correlation-Id': req.correlationId, 'Content-Type': 'application/json' },
+      })
+    );
     res.json(response.data);
   } catch (error) {
     next(error.response ? { status: error.response.status, message: error.response.data } : error);
   }
 });
 
-// PATCH /api/v1/offers/:id/status - Change offer status (MERCHANT or ADMIN only)
-router.patch('/:id/status', requireRole('MERCHANT', 'ADMIN'), async (req, res, next) => {
+// PATCH /api/v1/offers/:id/status - Change offer status
+// MERCHANT and ADMIN: create/manage their own offers
+// COLLEAGUE and EXEC: approve/reject offers in the review workflow
+router.patch('/:id/status', requireRole('MERCHANT', 'ADMIN', 'COLLEAGUE', 'EXEC'), async (req, res, next) => {
   try {
-    const response = await axios.patch(`${OFFER_SERVICE}/api/v1/offers/${req.params.id}/status`, req.body, {
-      headers: {
-        'X-Correlation-Id': req.correlationId,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await withRetry(() =>
+      axios.patch(`${OFFER_SERVICE}/api/v1/offers/${req.params.id}/status`, req.body, {
+        headers: { 'X-Correlation-Id': req.correlationId, 'Content-Type': 'application/json' },
+      })
+    );
     res.json(response.data);
   } catch (error) {
     next(error.response ? { status: error.response.status, message: error.response.data } : error);
