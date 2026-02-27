@@ -93,11 +93,16 @@ if (-not $SkipBffBuild) {
 # ---------------------------------------------------------------------------
 Write-Step "Deploying BFF to Cloud Run"
 
+$corsOrigins = ($FRONTENDS | ForEach-Object {
+    "https://$($_.Site).web.app,https://$($_.Site).firebaseapp.com"
+}) -join ","
+
 $bffEnvVars = "NODE_ENV=production," +
     "DB_HOST=/cloudsql/$DB_CONNECTION," +
     "DB_NAME=$DB_NAME," +
     "DB_USER=$DB_USER," +
     "DB_PASS=$DB_PASS," +
+    "CORS_ORIGINS=$corsOrigins," +
     "OFFER_SERVICE_URL=$($serviceUrls['offer-service'])," +
     "PARTNER_SERVICE_URL=$($serviceUrls['partner-service'])," +
     "ELIGIBILITY_SERVICE_URL=$($serviceUrls['eligibility-service'])," +

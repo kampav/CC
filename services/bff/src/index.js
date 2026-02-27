@@ -49,17 +49,16 @@ app.use('/demo', express.static(path.join(__dirname, '../public')));
 
 // ─── Security & Body ────────────────────────────────
 app.use(helmet());
+// CORS_ORIGINS env var: comma-separated list of extra allowed origins (set by deploy script for GCP)
+const extraOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
 app.use(cors({
   origin: [
     'http://localhost:5173', // customer-app (local)
     'http://localhost:5174', // merchant-portal (local)
     'http://localhost:5175', // colleague-portal (local)
-    'https://cc-customer-0315.web.app',
-    'https://cc-merchant-0315.web.app',
-    'https://cc-colleague-0315.web.app',
-    'https://cc-customer-0315.firebaseapp.com',
-    'https://cc-merchant-0315.firebaseapp.com',
-    'https://cc-colleague-0315.firebaseapp.com',
+    ...extraOrigins,
   ],
   credentials: true,
 }));

@@ -293,7 +293,10 @@ if (-not $OnlyFrontend) {
 
     # PORT is reserved by Cloud Run (set automatically from --port=3000); do NOT include it here.
     # CUSTOMER_SERVICE_URL / TRANSACTION_SERVICE_URL match the env var names used in routes/customers.js
-    $bffEnvVars = "NODE_ENV=production,DB_HOST=/cloudsql/$DB_CONNECTION,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASS=$DB_PASS,OFFER_SERVICE_URL=$($serviceUrls['offer-service']),PARTNER_SERVICE_URL=$($serviceUrls['partner-service']),ELIGIBILITY_SERVICE_URL=$($serviceUrls['eligibility-service']),REDEMPTION_SERVICE_URL=$($serviceUrls['redemption-service']),CUSTOMER_SERVICE_URL=$($serviceUrls['customer-data-service']),TRANSACTION_SERVICE_URL=$($serviceUrls['transaction-data-service'])"
+    $corsOrigins = ($FRONTENDS | ForEach-Object {
+        "https://$($_.Site).web.app,https://$($_.Site).firebaseapp.com"
+    }) -join ","
+    $bffEnvVars = "NODE_ENV=production,DB_HOST=/cloudsql/$DB_CONNECTION,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASS=$DB_PASS,CORS_ORIGINS=$corsOrigins,OFFER_SERVICE_URL=$($serviceUrls['offer-service']),PARTNER_SERVICE_URL=$($serviceUrls['partner-service']),ELIGIBILITY_SERVICE_URL=$($serviceUrls['eligibility-service']),REDEMPTION_SERVICE_URL=$($serviceUrls['redemption-service']),CUSTOMER_SERVICE_URL=$($serviceUrls['customer-data-service']),TRANSACTION_SERVICE_URL=$($serviceUrls['transaction-data-service'])"
 
     $bffTag = "$REGISTRY/bff:latest"
     & gcloud run deploy bff `

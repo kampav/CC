@@ -482,10 +482,10 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 **All services (10):** unchanged from v1.3.0
 
 **GCP (v1.4.0 — LIVE):**
-- https://cc-customer-0315.web.app (PWA-installable, fully responsive)
-- https://cc-merchant-0315.web.app
-- https://cc-colleague-0315.web.app
-- BFF Cloud Run: https://bff-5inerb4npa-uc.a.run.app
+- https://[your-customer-site].web.app (PWA-installable, fully responsive)
+- https://[your-merchant-site].web.app
+- https://[your-colleague-site].web.app
+- BFF Cloud Run: https://[your-bff-service].run.app
 
 **Data summary:** unchanged from v1.3.0
 
