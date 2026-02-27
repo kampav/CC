@@ -431,3 +431,68 @@ Empty but runnable starters: offer-service (8081), partner-service (8082), eligi
 - Persona selector: `http://localhost:5173/login` → dropdown
 - Frank (AT_RISK): rule-based surfaces high-value retention offers
 - Alice (PREMIER, EXPERIENCE_SEEKER): travel/dining offers with personalised reasons
+
+---
+
+## Phase 14: v1.4.0 -- DB Write Journey Fixes (2026-02-27)
+
+### Root causes fixed across all write journeys
+
+**Customer ID mapping bug (activations + transactions)**
+- `activations.js` and `transactions.js` were using `req.userId` (identity UUID — random, auth-only) instead of `req.customerId` (c0000000-... persona UUID used by customer-data-service and the recommendations engine)
+- Fix: all customer-scoped routes now use `req.customerId || req.userId`
+
+**RBAC gaps (offer and partner approval)**
+- `PATCH /api/v1/offers/:id/status` was `requireRole('MERCHANT','ADMIN')` — Colleagues blocked from approving offers
+- `PATCH /api/v1/partners/:id/status` was `requireRole('ADMIN')` — Colleagues blocked from approving merchant onboarding
+- `POST/PUT /api/v1/partners` was `requireRole('MERCHANT','ADMIN')` — Colleagues blocked from registering/updating merchants
+- Fix: added `COLLEAGUE` and `EXEC` to all these role lists
+
+**Cold-start 502 errors on Java write routes**
+- Cloud Run Java services at `min-instances=0` — first POST after idle returns 502/503
+- Only offer-service create had retry logic; campaigns, partners, activations had none
+- Fix: extracted shared `withRetry()` helper to `services/bff/src/utils.js` (2 retries, 6s delay); applied to all write routes in `campaigns.js`, `partners.js`, `activations.js`, and `offers.js` PUT
+
+**Unhandled IllegalArgumentException in CampaignController**
+- `PATCH /{id}/status` called `CampaignStatus.valueOf(body.get("status"))` with no null check or exception handler — invalid status string threw 500
+- Fix: null check + try/catch returning 400 with descriptive message
+
+### Files changed
+- `services/bff/src/utils.js` (NEW) — `withRetry(fn, retries=2, delayMs=6000)`
+- `services/bff/src/routes/activations.js` — customer ID fix + retry on POST
+- `services/bff/src/routes/transactions.js` — customer ID fix on all 3 routes
+- `services/bff/src/routes/offers.js` — RBAC fix + retry on PUT
+- `services/bff/src/routes/partners.js` — RBAC fix + retry on all writes
+- `services/bff/src/routes/campaigns.js` — retry on all writes
+- `services/offer-service/.../CampaignController.java` — 400 on invalid status
+- `infrastructure/gcp/deploy_offer_nocache.ps1` (NEW) — force `--no-cache` build for offer-service
+
+### Deployed
+- BFF: `bff-00013-9cr`
+- offer-service: `offer-service-00017-5z2`
+- All 3 Firebase Hosting frontends redeployed
+
+### Commits
+- `63a8180` — "fix: DB write journeys — RBAC, customer ID mapping, cold-start retry"
+
+---
+
+## Current State (2026-02-27) -- v1.4.0 LIVE
+
+**All services (10):** unchanged from v1.3.0
+
+**GCP (v1.4.0 — LIVE):**
+- https://cc-customer-0315.web.app (PWA-installable, fully responsive)
+- https://cc-merchant-0315.web.app
+- https://cc-colleague-0315.web.app
+- BFF Cloud Run: https://bff-5inerb4npa-uc.a.run.app
+
+**Data summary:** unchanged from v1.3.0
+
+**All write journeys now functional:**
+- Customer offer activation: stored under correct persona UUID
+- Transaction simulation: cashback credited to correct customer
+- Offer status approval (COLLEAGUE/EXEC): now permitted
+- Merchant onboarding approval (COLLEAGUE/EXEC): now permitted
+- Campaign status changes: graceful 400 on invalid status
+- All write routes: cold-start resilient (2 retries, 6s delay)
